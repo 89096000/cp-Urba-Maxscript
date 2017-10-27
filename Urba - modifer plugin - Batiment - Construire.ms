@@ -66,6 +66,16 @@ struct str_constr_outils (
 			
 		),
 		
+		fn etendreFaces		_node 	_faces	= (
+			local selectBack = polyop.getFaceSelection  _node
+			polyop.setFaceSelection  _node 	_faces
+			_node.EditablePoly.GrowSelection ()
+			local facesEtendus	=  polyop.getFaceSelection  _node 
+			format "facesEtendus : %\n" facesEtendus
+			polyop.setFaceSelection  _node  selectBack
+			facesEtendus
+		),
+		
 		fn facesDuDessous		_node	_faces	=	(
 			
 			local _selectBack 	= 	polyop.getFaceSelection  _node 
@@ -236,6 +246,32 @@ struct str_constr_outils (
 			 faceHaute
 		),
 		
+		
+		fn get_hauteurNodeModele 	_nd	=(
+			local  BB = nodeGetBoundingBox 	_nd	(matrix3 1)
+			local hauteur = BB[2].z -  BB[1].z 
+			hauteur
+		),
+		fn get_largeurNodeModele 	_nd	=(
+			local  BB = nodeGetBoundingBox 	_nd	(matrix3 1)
+			local largeur = BB[2].x -  BB[1].x 
+			largeur
+		),
+		fn get_angle_vecteur 	vec	=(
+			
+			local result = 0
+			local angle_tan = atan ( vec.y / vec.x )
+			
+			if vec.x >=0 then (
+				if vec.y >= 0 then 	result = angle_tan
+				else 	result = 360 + angle_tan
+			) else (		
+				if vec.y >= 0 then 	result = 180 + angle_tan
+				else result = 180 + angle_tan
+			)
+			
+			result
+		),		
 		
 		---- meusures ----
 		fn ZMinFace 	_node  _listeFaces = (
@@ -470,6 +506,7 @@ struct str_construire (
 							
 							--- point Mur ----
 							local pt 			= 	_this.trace_courant[i]	
+							pt.z = z
 							append pointsMurs  pt		
 							
 							local pt_result = plan_pente.projeter_point_verticalement 	pt
@@ -479,9 +516,14 @@ struct str_construire (
 						)
 						
 						--- creation de la face du dessus ----
-						append nvlsFaces ( geo_ptr.creerFace  	pointsPente 	_this	)
+						local faceDessus =  geo_ptr.creerFace  	pointsPente 	_this
+						append nvlsFaces faceDessus
+						
+						-- MatID --
+						polyop.setFaceMatID _this.delegate  #(faceDessus) 	matID.toiture
 						
 						---- creation des raccord mur ----------
+						local facesMurs = #()
 						for i = 1 to pointsMurs.count  do (
 							
 							local j = i+1
@@ -493,9 +535,34 @@ struct str_construire (
 							local ptPente4	= pointsPente[i]
 							
 							local pointsRaccord = #(ptMur1, ptMur2, ptPente3, ptPente4)
-							append nvlsFaces ( geo_ptr.creerFace  	pointsRaccord 	_this)
+							local faceMurs = geo_ptr.creerFace  	pointsRaccord 	_this
+							append nvlsFaces faceMurs
+							polyop.setFaceMatID _this.delegate  #(faceMurs) 	matID.mur
 						)
 					
+						
+						
+						-- souder les points --
+						local vertsASouder =#()
+						for IDFace in nvlsFaces do (
+							local vertsFace = polyop.getFaceVerts _this.delegate	 IDFace
+							for vert in vertsFace do 
+								appendIfUnique  vertsASouder 	vert
+							-- _this.delegate.weldThreshold
+						)
+						polyop.weldVertsByThreshold _this.delegate 		(vertsASouder as bitArray)
+						
+						
+						---- debord et epaisseur du toit -----
+						polyop.bevelFaces 	_this.delegate  	faceDessus 	0.0 	30.
+						polyop.extrudeFaces _this.delegate  	faceDessus 	20.
+						
+						
+-- 						format ".extrustionType : %\n" _this.delegate.extrustionType
+-- 						polyop.extrudeFaces _this.delegate  	nvlsFaces 	0.0
+-- 						polyop.extrudeFaces _this.delegate  	nvlsFaces 	0.0
+						
+						
 				)
 				2: (---------- 2 PENTES ----------------------------------------------------------------------------------------------------
 					
@@ -607,28 +674,74 @@ struct str_construire (
 							local ptPente4	= pointsPente[ i ]
 							
 							local pointsRaccord = #(ptMur1, ptMur2, ptPente3, ptPente4)
-							append nvlsFaces ( geo_ptr.creerFace  	pointsRaccord 	_this)
+							local nvlFace = geo_ptr.creerFace  	pointsRaccord 	_this
+							append nvlsFaces nvlFace
+							-- MatID --
+							polyop.setFaceMatID _this.delegate  nvlFace 	matID.mur
 						) 
 						
 						
 						--- les pentes -----
-						append nvlsFaces ( geo_ptr.creerFace  		pointsPente1 	_this)
-						append nvlsFaces ( geo_ptr.creerFace  		pointsPente2	_this)
+						local facesDessus =#()
+						local face1 =  geo_ptr.creerFace  		pointsPente1 	_this
+						local face2 =  geo_ptr.creerFace  		pointsPente2 	_this
+						
+						append facesDessus face1
+						append facesDessus face2
+						
+						append nvlsFaces face1
+						append nvlsFaces face2
 						
 						
+						-- MatID --
+						polyop.setFaceMatID _this.delegate  facesDessus 	matID.toiture
+						
+						
+						
+						
+						
+						-- souder les points --
+						local vertsASouder =#()
+						for IDFace in nvlsFaces do (
+							local vertsFace = polyop.getFaceVerts _this.delegate	 IDFace
+							for vert in vertsFace do 
+								appendIfUnique  vertsASouder 	vert
+							-- _this.delegate.weldThreshold
+						)
+						polyop.weldVertsByThreshold _this.delegate 		(vertsASouder as bitArray)
+						
+						facesDessus = #( _this.delegate.getNumFaces () - 1, _this.delegate.getNumFaces () )
+						---- debord et epaisseur du toit -----
+						polyop.bevelFaces 		_this.delegate  	facesDessus 	0.0 	30.
+						polyop.extrudeFaces 	_this.delegate  	facesDessus 	20.
 				)
 			)
 		),		
 		fn acrotere			_this		_face		= (
 			
-			--- les murs -----
+			---- les murs -----
+			-- MatID --
+			polyop.setFaceMatID _this.delegate  #(_face) 	matID.mur
+			-- gemoetrie --			
 			polyop.bevelFaces _this.delegate 	#(_face) 	0 	-ep_mur
 			local faceAExtruder = #{_face+1..(polyop.getNumFaces _this.delegate)} as array
 			polyop.extrudeFaces  _this.delegate 	faceAExtruder 	_this.toit_hauteur
 			
-			--- la couvertine  -----
+			
+			---- la couvertine  -----
+			-- MatID --
+			polyop.setFaceMatID _this.delegate  faceAExtruder 	matID.metal
+			-- gemoetrie --
 			polyop.bevelFaces _this.delegate 	faceAExtruder		0 	ep_couvertine
 			polyop.extrudeFaces _this.delegate 	faceAExtruder		ep_couvertine
+			
+			local faceToitsSurface = outils.etendreFaces  	_this.delegate 	#(_face)
+			
+			format "faceToitsSurface : %\n" faceToitsSurface
+			
+			
+			-- MatID --
+			polyop.setFaceMatID _this.delegate  faceToitsSurface 	matID.toiture
 			
 		),		
 		fn toit 				_this		&z =(
@@ -727,7 +840,7 @@ struct str_construire (
 			
 			local longueurFacade 		= distance _pt1 _pt2
 			local normDir					=	normalize ( _pt2 - _pt1)
-			local rot 						= get_angle_vecteur		normDir
+			local rot 						= outils.get_angle_vecteur		normDir
 			local longueur_sequence 	= _facade.sequence_longueur
 			local sequence 				= _facade.sequence 		
 			local b_espacer 				= _facade.mode == 4
@@ -803,7 +916,7 @@ struct str_construire (
 					
 					case composant.type    of (
 						 #Modele:			(
-							
+							/* 
 							---- on tire au hasare le modele  ------------
 							local probaTotal = 0
 							for proba in composant.modeles_probas do 
@@ -859,7 +972,7 @@ struct str_construire (
 									pt1 = pt2
 								)
 							) -- fin if modele undeinde
-							
+							 */
 							
 						) -- fin modele 
 						#Parametrique: 	(
@@ -1161,11 +1274,24 @@ struct str_construire (
 					toit				_this	&zCourant
 					local chrono_toit					= timeStamp ()	
 					
+					--- Mapping ---
+					matrxMapping = matrix3 1 
+					rotateZ matrxMapping  ( 90 - (quatToEuler2  _this.axeP_mtrx.rotationpart).z )
+					polyop.applyUVWMap 	_this.delegate  #box	 tm:matrxMapping  channel:1
+					
+-- 					point name:"popo" transform:matrxMapping size:500 axistripod:on
+					
 					local chrono_retirerImport		= timeStamp ()	
 					retirer_modelesImports ()
 					
 					local chrono_total				= timeStamp ()	
 					
+					
+					
+					
+					
+					
+					--- affichage sortie --------
 					debug "Construire bâtiment"
 					debug "			import" var:(	(   (chrono_import - chrono_debut ) / 1000.0)	as string + "s." )
 					debug "			ssBassement" var:( (   ( chrono_ssBassement - chrono_import ) / 1000.0)	as string + "s." )
@@ -1182,87 +1308,6 @@ struct str_construire (
 		)
 	
 	
-		/* ****************  BACK -****************************************
-		fn etagesBACK 				_this				&z	=(
-			
-			--- passerelle ----------
-			local get_murPlein = _this.facades.get_murPlein
-			
-			
-			local facesDunEtage =#()
-			
-			---- boucle étages ---------------------
-			for n_etage = 0 to _this.niveaux_nbre  do (
-				
-				--- filtre par etages ---------------
-				local facades_etages 				= 	filtrer_facades_parEtages		_this.facades.facades_total 	n_etage
-				local on_a_une_facade_etage 	= facades_etages.count > 0
-				local listePts 							= _this.trace_courant
-				
-				---- boucle  murs ---------------------
-				for id_pt = 1 to listePts.count do	 (
-					
-					local on_a_une_facade_mur = false
-					
-					--- les 2 points du mur ----------
-					local pt_mur_1 = listePts[ id_pt ]
-					local pt_mur_2						
-					if id_pt == listePts.count 	then	pt_mur_2 = listePts[ 1 ]
-														else	pt_mur_2 = listePts[ id_pt + 1 ]
-					pt_mur_1.z = pt_mur_2.z = z
-					
-					local	mur_longueur 		= distance pt_mur_1 	pt_mur_2
-					local	norm_mur 			= normalize ( pt_mur_2 -	pt_mur_1 )
-					
-					---- si on  a des facades ------
-					if 	on_a_une_facade_etage  do (
-					
-						---  filtre par  murs  ---------------
-						local facades_mur		=	filtrer_facades_parMurs		facades_etages	mur_longueur	id_pt		_this	
-						
-						---  filtre par probabilités  ---------------						
-						local facade_choisi 		= choisir_parProbas		facades_mur	
-						
-						---- on lance les construction ----------------
-						if facade_choisi != undefined and facade_choisi.sequence.count > 0 then (
-						--- si on a une facade, on construit la sequence --------------
-							creer_sequence		pt_mur_1		pt_mur_2	 facade_choisi		_this	
-							on_a_une_facade_mur = true
-						)  
-						
-					) 
-					
-					if not  on_a_une_facade_mur do (
-					--- sinon un mur plein --------------
-						
-						--- Composant 'Mur plein' temporaire	------
-						local pt_accroche_1 	= 	pt_mur_1 
-						local pt_accroche_2 	= 	pt_mur_1 + [0,0,_this.ep_dalle]
-						local pt_accroche_3 	= 	pt_accroche_2 + [0,0,_this.niveaux_hauteur]	
-						
-						local ptsIDs_accroche 	= ( geo_ptr.creer.points   #( pt_accroche_1 , pt_accroche_2 , pt_accroche_3 )	 _this	)
-						
-						local compoTmp = get_murPlein		mur_longueur 		_this
-						ptsIDs_accroche 	= compoTmp.param[1].construire	 ptsIDs_accroche		norm_mur		_this 
-						
-					)
-					
-				)
-				
-				z += _this.niveaux_hauteur + _this.ep_dalle
-				
-				
-			) --- fin boucle etages -------------
-				
-				
-			
-			geo_ptr.creerFacesContour	 	_this.trace_courant		z 	_this.ep_dalle	_this
-			z += ep_dalle
-			
-		)
-		
-		*********************** BACK **********************************/
-		
 ) ---- fin struct construire ------------------
 
 

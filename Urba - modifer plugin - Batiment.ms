@@ -283,9 +283,9 @@ extends:Editable_poly replaceUI:true version:0
 	fn actualiser_cacherGeo =(
 		if this.cache_geometrie then (
 			local faces = #{1..(polyop.getNumFaces delegate)} as array
-			polyop.setHiddenFaces 	delegate 	faces
+			polyop.setHiddenFaces 	this.delegate 	faces
 		) else
-			polyop.unHideAllFaces 	delegate
+			polyop.unHideAllFaces 	this.delegate
 	)
 	------ Rollouts------------
 	fn actualiser_rollouts =(
@@ -308,7 +308,13 @@ extends:Editable_poly replaceUI:true version:0
 -- 		debug "actualiser_rollouts : OK"
 		
 	)
-	
+	---- Reconstruit le batiment ---
+	fn actualiser_geometrie =(
+		
+		facades.params_toStructs 	this
+		
+		construire.batiment 	this
+	)
 	
 	
 	fn assigner_trace 	_nvtrace	_node	= (
@@ -337,7 +343,7 @@ extends:Editable_poly replaceUI:true version:0
 	on load 						do 	(
 		debug "load du plugin" 
 		VP_toggle ()
-		trace.actualiser 	this	 
+-- 		trace.actualiser 	this	 
 -- 		facades.params_toStructs		this
 	)
 	on clone 	_original 	do (
@@ -368,62 +374,23 @@ extends:Editable_poly replaceUI:true version:0
  
 
 
-macroScript creerBatiments
-category:"#CPages"
-buttonText:"Batiments"
-toolTip:"Creer un batiment sur chacune des splines selectionnées."
-(
-	with redraw off (
-		local bats = #()
-		for obj in selection where superClassof obj == shape do(
-			bat = urba_batiment ()
-			bat.assigner_trace 	obj	bat
-			bat.wirecolor = obj.wireColor
-			append bats bat
-		)
-		select bats
-	)
-)
-
-
-
-macroScript collerStyle_Batiments
-category:"#CPages"
-buttonText:"coller style Bat."
-toolTip:""
-(
-	with redraw off (
-		
-		for obj in selection where classof obj as string == "urba_batiment" do(
-			format "obj : %\n" obj.name
-			obj.presets.coller obj
-			
-			obj.facades.params_toStructs 	obj
-		
-			obj.trace.actualiser obj
-			obj.construire.batiment obj
-			obj.actualiser_rollouts()
-		)
-		
-	)
-)
-
-
-
-
 
 /* 
 
 
+
+
+try delete $ catch ()
+
 debug_mode =false
 -- debug_mode =true
 
-for obj in objects do if superclassof obj == GeometryClass and obj != $'triple002'  and obj != $'Porte002'  and obj != $'Porte003' do delete obj
+-- for obj in objects do if superclassof obj == GeometryClass and obj != $'triple002'  and obj != $'Porte002'  and obj != $'Porte003' do delete obj
 bat1 = urba_batiment ()
 clearlistener ()
 for obj in helpers do delete obj
 
-bat1.assigner_trace 	$'Tracé - batiments - 268'	bat1
+bat1.assigner_trace 	$'Tracé - batiments - 121'	bat1
 -- bat1.assigner_trace 	$Shape009	bat1
 
 -- bat1.facades.creer_facade 	bat1
@@ -431,6 +398,7 @@ bat1.assigner_trace 	$'Tracé - batiments - 268'	bat1
 
 select bat1
 
+select $popo
 
 bat1.pos = [0,0,0]
 bat1.trace.rectangles_traces
@@ -479,6 +447,22 @@ $.facades.composants_total
 
 
 $.facades_parametriques[1]
+for obj in objects  do WITH REDRAW OFF try obj.actualiser_geometrie () catch ()
+$.actualiser_geometrie ()
+
+
+
+--- Pente aléatoire ---
+for obj in selection  do try (
+	local angle = random 15. 35.
+	obj.toit_pente = angle 
+	obj.actualiser_geometrie () 
+) catch ()
+
+
+
+
+
 
 
 

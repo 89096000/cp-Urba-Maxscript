@@ -83,7 +83,7 @@ struct str_trace (
 				append result _trace[i]
 			result
 		),
-			
+		
 		-----------------  Axe P ----------------------
 		fn mtrx_axeP			_trace  							=(
 			
@@ -97,7 +97,7 @@ struct str_trace (
 			 else if axeMtrx.row1	==	[0,0,1] do
 				axeMtrx =  (rotateYMatrix 180)  *(rotateXMatrix 180)  * (rotateZMatrix 90) * axeMtrx
 			
-			axeMtrx		
+			axeMtrx
 		),
 		fn BB_axeP			_trace  		_mtrxAxe  	=(
 			
@@ -610,7 +610,7 @@ struct str_trace (
 				verticale = true
 			) else (
 				a 	= (pt.z - pt_virtuel.z ) / (pt.x - pt_virtuel.x)
-				b 	= pt.z - a1*pt.x
+				b 	= pt.z - a*pt.x
 			)		
 			
 			
