@@ -300,6 +300,9 @@ struct str_datasMgr (
 			_element
 		)
 )
+
+
+
 ------------------------------------------------------------------------------------------------------------------------------------------------------
 --------- STRUCTURES Grandes fonctions -----------------------------------------------------------------------------------------------------
 ------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -314,26 +317,35 @@ struct 	str_facades (
 		catch ()
 	),
 	
+	
+	
+	
+	------------------------------------------------------------------------------------------------------------------------------------------------------
+	------------ MEMBRES	--------------------------------------------------------------------------------------------------------------------------
+	------------------------------------------------------------------------------------------------------------------------------------------------------
+	---- Pointeurs divers --------------------
 	public
 		dialog,
 		constr_ptr,
-	
+		
+	---- Parametres de la fenetre  --------------------
 	private
-		dialog_pos = [1235,223],
-		dialog_estOuvert = false,
+		dialog_pos 					= [1235,223],
+		dialog_estOuvert 			= false,
 		
-		datasMgr = str_datasMgr 	m_prt:this,
+	---- Pour manipuler les parametres du batiment  --------------------
+		datasMgr 					= str_datasMgr 	m_prt:this,
+		params_aEnregistrer 	= #(	#nom, #etages_nbre_min, #etages_nbre_max, #longueur_min, #longueur_max, #murs, #repeter, #etirer, #sequence	),		
+		presets 						= str_presets_batiment 	fichier_dossier:			( getDir #userScripts	 + "\\cp-Urba\\lib\\façades\\"		)	\
+																			fichier_categorie:			"Urba - Façades"	\
+																			fichier_extension:			"fcd"	\
+																			params_aEnregistrer:	params_aEnregistrer,
 		
-		params_aEnregistrer = #(	#nom, #etages_nbre_min, #etages_nbre_max, #longueur_min, #longueur_max, #murs, #repeter, #etirer, #sequence	),
-	
-	public
-		presets 	= str_presets_batiment 	fichier_dossier:			( getDir #userScripts	 + "\\cp-Urba\\lib\\façades\\"		)	\
-														fichier_categorie:			"Urba - Façades"	\
-														fichier_extension:			"fcd"	\
-														params_aEnregistrer:	params_aEnregistrer,
-		scan 		= str_enregistreurDeNode (),
+	---- Le scanner de mesh  --------------------
+		scan 							= str_enregistreurDeNode (),
 		
-	public
+	---- Les parametres du batiment  --------------------
+	private
 		facades_total				= #(), ---- les facades du batiment en struct---------------
 		composants_total		= #(), ---- les composant du batiment en struct---------------
 		modeles_total				= #(), ---- les modeles du batiment en struct---------------
@@ -347,19 +359,21 @@ struct 	str_facades (
 		
 		
 		
-		--------------------------------------------------------------------------------------------------------
-		----------------	 Accessions				 	----------------------------------------------------
-		--------------------------------------------------------------------------------------------------------
+	
+		------------------------------------------------------------------------------------------------------------------------------------------------------
+		------------ FONCTIONS	----------------------------------------------------------------------------------------------------------------------
+		------------------------------------------------------------------------------------------------------------------------------------------------------
 		
-		----------------	Composants 	----------------
-	public
-		fn get_composant_idUnique_param	_id _this =(
+		----------------	 Accessions				 	--------------------------------------------------------------------------------------------------------
+	private
+		----	Composants 	----
+		fn get_composant_idUnique_param	_id 	_this =(
 			local strg_param 	= _this.facades_composants[_id]
 			local idStrg 			= findstring 	strg_param		"#FAC_CMP_"
 			local result 			= substring 	strg_param 	idStrg	  19 
 			result
 		),
-		fn get_composants_ids_param 	_this =(
+		fn get_composants_ids_param 				_this =(
 			local result =#()
 			for i = 1 to _this.facades_composants.count	 do (
 				append result  ( get_composant_idUnique_param i	_this )
@@ -374,7 +388,6 @@ struct 	str_facades (
 				if composants_ids[i] == _idUnique do result = i
 			result
 		),
-		
 		fn get_composant			_idUnique	_this	=(
 			
 			local result
@@ -384,9 +397,7 @@ struct 	str_facades (
 			
 		),
 		
-		
-		
-		----------------	Modeles	 ----------------
+		----	Modeles	 ----
 		fn get_modele_idUnique_param	_id 	_this =(
 			local strg_param 	= _this.facades_modeles[_id]
 			local idStrg 			= findstring 	strg_param		"#FAC_MOD_"
@@ -415,9 +426,7 @@ struct 	str_facades (
 			result
 		),
 		
-		
-		
-		----------------	Composants 	parametriques 	----------------
+		----	Composants 	parametriques 	----
 		fn get_parametrique_idUnique_param		_id 	_this =(
 			local strg_param 	= _this.facades_parametriques[_id]
 			local idStrg 			= findstring 	strg_param		"#FAC_P"
@@ -440,7 +449,6 @@ struct 	str_facades (
 				if modeles_ids[i] == _idUnique do result = i
 			result
 		),
-		
 		fn get_parametrique		_idUnique	_this	=(
 			local result
 			for param in parametriques_total do
@@ -448,9 +456,7 @@ struct 	str_facades (
 			result
 		),
 		
-		
-		
-		----------------	 get universelle 	---------------------
+		----	 get universelle 	----
 		fn get_parametre_parID	_iUnique		 _this =(
 			
 			---- un composant ------------
@@ -473,11 +479,9 @@ struct 	str_facades (
 
 		
 		
-		--------------------------------------------------------------------------------------------------------
-		----------------	 PARAM  <---->  STRUCT 	----------------------------------------------------
-		--------------------------------------------------------------------------------------------------------
-	public
-		----- pour recuperer les parametres du plug et en faire des trucs -----
+		----------------	 PARAM  <---->  STRUCT 	--------------------------------------------------------------------------------------------------------
+	private
+		----- creation des structs -----
 		fn params_toStructs 	_this	=		(
 			
 			------ Modeles -------
@@ -526,7 +530,7 @@ struct 	str_facades (
 			)
 			
 		),
-				----- ecires les structs dans les parametres  du plug -------------------------------------
+		----- Enregistrer les structs dans les parametres  -------------------------------------
 		fn enregistrer_parametrique		_param	_this =(
 			
 			local id_param = get_parametrique_idParam		_param.id		_this
@@ -547,7 +551,6 @@ struct 	str_facades (
 				append	_this.facades_modeles			(datasMgr.get_datas_string  _modele)
 			
 		),
-		
 		fn enregistrer_composant	 _composant	_this =(
 			
 			local id_compo 			= get_composant_idParam		_composant.id		_this
@@ -561,8 +564,31 @@ struct 	str_facades (
 			)
 			
 		),
-		
 		fn enregistrer_facade		_facade		_this =(
+			
+			
+			local sequence_longueur = 0			
+			for compo in _facade.sequence do (
+				
+				sequence_longueur += compo.longueur
+				
+				for modele in compo.modeles do 
+					enregistrer_modele	modele	 _this 
+				
+				enregistrer_parametrique	compo.param[1]	 _this 
+				enregistrer_composant		compo	 		_this 
+			)
+			
+			facade_courante.sequence_longueur = sequence_longueur
+			enregistrer_facade		_facade		_this 
+			
+			
+			
+			
+			
+			
+			
+			
 			
 			local id_compo 		= id_courant
 			local string_compo 	= (datasMgr.get_datas_string  _facade )
@@ -576,105 +602,22 @@ struct 	str_facades (
 		
 		
 		
+	
 		
 		
-		--------------------------------------------------------------------------------------------------------
-		----------------	 Manipulations MODELE	 	----------------------------------------------------
-		--------------------------------------------------------------------------------------------------------		
-		fn positionnerPivot_modele	 _node =(
-			local segmentsOuverts 	= polyop.getOpenEdges _node
-			local pointsSegsOuverts 	=#()
-			local pointsResult 			=[0,0,0]
-			for seg in segmentsOuverts do (
-				local ptsDuSegment = polyop.getVertsUsingEdge   _node	seg
-				for pt in ptsDuSegment do
-					appendIfUnique pointsSegsOuverts	pt
-			)
-			
-			--- on cherche le point  ------
-			format "pointsSegsOuverts : %\n" pointsSegsOuverts
-			
-			for idPt in pointsSegsOuverts do (
-				
-				if idPt == pointsSegsOuverts[1] then pointsResult = _node.verts[ idPt ].pos
-				else (
-					local pt =_node.verts[ idPt ].pos
-					if pt.x < pointsResult.x do pointsResult = pt
-					if pt.y < pointsResult.y do pointsResult = pt
-					if pt.z < pointsResult.z do pointsResult = pt
-				)
-			)
-			_node.pivot = pointsResult
-			
-		),
-		fn preparer_modele 	_node	=(
-			
-				--- preparation du model -------
-				local nvModel_node = copy _node 
-				convertToPoly 	nvModel_node
-				local  BB = nodeGetBoundingBox 	nvModel_node	(matrix3 1)
-				positionnerPivot_modele 	nvModel_node
-				nvModel_node.rotation = quat 0 0 0 1
-				nvModel_node.pos  = [0,0,0]
-				
-				nvModel_node
+		----------------	 Constructeurs			 	--------------------------------------------------------------------------------------------------------
+	private
+		-- creer une instance temporaire d'un composant mur plein et la renvois -----
+		fn get_murPlein	_longueur	_this	 =(
+			local 	nvComposant 	= 	str_facade_composant 	type:#Parametrique
+			local 	nvParam 		= 	str_facadeParam_murPlein			()
+			nvComposant.param 					= #( nvParam )
+			nvComposant.param[1].initialiser 	nvComposant		_this.construire	
+			nvComposant.longueur = _longueur
+			nvComposant
 		),
 		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		--------------------------------------------------------------------------------------------------------
-		----------------	 Interface				 	----------------------------------------------------
-		--------------------------------------------------------------------------------------------------------	
-		fn valider_facade		_this =(
-			
-			local sequence_longueur = 0
-			
-			for compo in facade_courante.sequence do (
-				
-				sequence_longueur += compo.longueur
-				
-				for modele in compo.modeles do (
-					enregistrer_modele	modele	 _this 
-					
-				)
-				
-				enregistrer_parametrique	compo.param[1]	 _this 
-				enregistrer_composant		compo	 		_this 
-			)
-			
-			facade_courante.sequence_longueur = sequence_longueur
-			enregistrer_facade		facade_courante		_this 
-			
-			
-			
-			_this.actualiser_rollouts ()	
-			_this.construire.batiment 	_this
-			
-		),
-		
-		
-		
-		
-		
-		
-		--------------------------------------------------------------------------------------------------------
-		----------------	 Constructeurs			 	----------------------------------------------------
-		--------------------------------------------------------------------------------------------------------	
-		
+		--- creations de base -------
 		fn creer_modele				_composant	_node	_this	=(
 			
 			--- preparation du model -------
@@ -699,16 +642,61 @@ struct 	str_facades (
 			
 			
 		),
-		
-		fn get_murPlein	_longueur	_this	 =(
-			local 	nvComposant 	= 	str_facade_composant 	type:#Parametrique
-			local 	nvParam 		= 	str_facadeParam_murPlein			()
-			nvComposant.param 					= #( nvParam )
-			nvComposant.param[1].initialiser 	nvComposant		_this.construire	
-			nvComposant.longueur = _longueur
+		fn creer_composant		_pos	 _type	_this 		param_type:		=(	--- param_type: pour creation composant parametrique	--->	#MurPlein	, 	#BaieSimple, 
+			debug "creer_composant"
+			
+			local nvComposant 	= str_facade_composant 	type:_type
+			local nvParam
+			
+			case param_type as name of (
+				#MurPlein:			nvParam 	= 	str_facadeParam_murPlein			()		
+				#BaieSimple:		nvParam 	= 	str_facadeParam_baieSimple		() 
+				#BaieTablette:	nvParam 	= 	str_facadeParam_baie				() 
+				#Espacement:		nvParam 	= 	str_facadeParam_espacement	() 
+				#Balcon:			nvParam 	= 	str_facadeParam_balcon			() 
+				default:				()
+			)
+			
+			--- exceptions -------------
+			if nvParam != undefined do (
+				nvComposant.param = #( nvParam )
+				nvComposant.param[1].initialiser 	nvComposant		_this.construire	
+				append 		parametriques_total		nvComposant.param[1]
+			)
+			
+			if param_type as name == #Balcon do (
+				
+				local nvCompo_balconFin 	= str_facade_composant 	type:_type
+				nvCompo_balconFin.param = #( str_facadeParam_balconFin 	() )
+				nvCompo_balconFin.param[1].initialiser 	nvCompo_balconFin		_this.construire	
+				
+				
+				append 		parametriques_total		nvCompo_balconFin.param[1]
+				
+				insertItem 	nvCompo_balconFin 			facade_courante.sequence 	( _pos + 1 )			
+				append 		composants_total	nvCompo_balconFin
+				
+			)
+			
+			
+			
+			
+			
+			insertItem 	nvComposant 			facade_courante.sequence 	( _pos + 1 )			
+			append 		composants_total	nvComposant
+			
 			nvComposant
-		),	
+			
+		),
+		fn creer_facade 						_this	=(
+			local nvlFacade = str_facade ()
+			
+			nvlFacade.nom	+=	" " + (_this.facades_items.count + 1  ) as string
+			append facades_total	nvlFacade
+			nvlFacade
+		),
 		
+		--- Copie et instanciations -------
 		fn dupliquer_composant		_idCompoADupliquer	 	_this 	=(
 			
 			local composantSource 	= 	facade_courante.sequence[_idCompoADupliquer]		
@@ -781,63 +769,6 @@ struct 	str_facades (
 			
 			debug "nvComposant DUPLICATE" var:nvComposant
 		),
-		
-		fn creer_composant		_pos	 _type	_this 		param_type:		=(	--- param_type: pour creation composant parametrique	--->	#MurPlein	, 	#BaieSimple, 
-			debug "creer_composant"
-			
-			local nvComposant 	= str_facade_composant 	type:_type
-			local nvParam
-			
-			case param_type as name of (
-				#MurPlein:			nvParam 	= 	str_facadeParam_murPlein			()		
-				#BaieSimple:		nvParam 	= 	str_facadeParam_baieSimple		() 
-				#BaieTablette:	nvParam 	= 	str_facadeParam_baie				() 
-				#Espacement:		nvParam 	= 	str_facadeParam_espacement	() 
-				#Balcon:			nvParam 	= 	str_facadeParam_balcon			() 
-				default:				()
-			)
-			
-			--- exceptions -------------
-			if nvParam != undefined do (
-				nvComposant.param = #( nvParam )
-				nvComposant.param[1].initialiser 	nvComposant		_this.construire	
-				append 		parametriques_total		nvComposant.param[1]
-			)
-			
-			if param_type as name == #Balcon do (
-				
-				local nvCompo_balconFin 	= str_facade_composant 	type:_type
-				nvCompo_balconFin.param = #( str_facadeParam_balconFin 	() )
-				nvCompo_balconFin.param[1].initialiser 	nvCompo_balconFin		_this.construire	
-				
-				
-				append 		parametriques_total		nvCompo_balconFin.param[1]
-				
-				insertItem 	nvCompo_balconFin 			facade_courante.sequence 	( _pos + 1 )			
-				append 		composants_total	nvCompo_balconFin
-				
-			)
-			
-			
-			
-			
-			
-			insertItem 	nvComposant 			facade_courante.sequence 	( _pos + 1 )			
-			append 		composants_total	nvComposant
-			
-			nvComposant
-			
-		),
-		
-		fn supprimer	_id	_this		 	=(
-			debug "supprimer -> TODO"
-			/*
-			deleteItem _this.facades_items 	_id
-			*/
-		),
-		
-		
-		
 		fn dupliquer_facade 			_id			_this	=(
 			local facadesource 	= 	facades_total[_id]
 			local nvlFacade 		= 	str_facade ()
@@ -852,37 +783,78 @@ struct 	str_facades (
 			nvlFacade
 		),
 		
-		fn creer_facade 						_this	=(
-			local nvlFacade = str_facade ()
+		--- Suppressions -------
+		fn supprimer_facade		_id	_this		 	=(
 			
-			nvlFacade.nom	+=	" " + (_this.facades_items.count + 1  ) as string
--- 			append _this.facades_items (datasMgr.get_datas_string  nvlFacade)
-			append facades_total	nvlFacade
-			nvlFacade
+			local facadeAVirer = facades_total[_id]
+			
+			for compo in facadeAVirer.sequence do (
+				supprimer_composant	compo
+			)
+			
+			------ Parametriques -------
+			parametriques_total				= #()
+			for strg_param in _this.facades_parametriques 	do (
+				local nvParam 					
+				local idStrg 		= findstring 	strg_param		"#FAC_P"
+				local type	 		= substring 	strg_param 	(idStrg+6)	  2 
+				case type of (
+					"MP": 	nvParam = str_facadeParam_murPlein ()
+					"BS":		nvParam = str_facadeParam_baieSimple ()
+					"BT":		nvParam = str_facadeParam_baie ()
+					"ES":		nvParam = str_facadeParam_espacement ()
+					"BD":		nvParam = str_facadeParam_balcon ()
+					"BF":		nvParam = str_facadeParam_balconFin ()
+				)
+				datasMgr.set_datas_string			strg_param		nvParam		_this
+				append parametriques_total 		nvParam
+			)
+			
+			
+			------ Composants -------
+			composants_total		= #()
+			for compo in _this.facades_composants 	do (
+				local nvCompo =   str_facade_composant ()
+				datasMgr.set_datas_string		compo		nvCompo	_this
+				append composants_total 		nvCompo
+				if nvCompo.type == #parametrique do
+					nvCompo.param[1].actualiser 	nvCompo		constr_ptr
+			)
+			
+			
+			
+			
+			deleteItem 	facades_total 		_id
+			
+			
+			
+			
+			deleteItem 	_this.facades_items		_id
 		),
 		
+		
+		
+		
+		
 			
 		
-		--------------------------------------------------------------------------------------------------------
 		----------------	 FENETRE				 	----------------------------------------------------
-		--------------------------------------------------------------------------------------------------------	
+	public
 		fn est_ouvert = dialog_estOuvert,
 		fn fermer 						_this		quiet:false	=(
--- 			debug "Fermer rollout"
 			
--- 			stack  ()
+			-- on demande si on veut enregistrer ----
+			if not quiet do if queryBox "Enregistrer les modifications ?"	title:"Urba | Bâtiment | Façade" 	do 
+					enregistrer_facade 	 facade_courante		_this
 			
-			if not quiet do
-				if queryBox "Enregistrer les modifications ?"	title:"Urba | Bâtiment | Façade" 	do 
-					valider_facade 	_this
-					
-			
-			--- Actiualiser position pour reouverture prochaine ----
+			--- Actiualiser position de la fenetre ----
 			if dialog_estOuvert do
 				dialog_pos = getDialogPos dialog	
 			dialog_estOuvert = false
+			
 			---- fermer la fenêtre ----
 			try destroydialog dialog catch ()
+			
 		),
 		fn ouvrir  			_id 		_this =(
 			

@@ -117,6 +117,9 @@ struct str_facade_modele (
 )
 
 
+
+
+
 -----------------------	FACADES PARAMETRIQUES	-------------------------------------------------------------------------------------------------------------
 struct	str_facadeParam_espacement (
 	private
@@ -170,6 +173,7 @@ struct	str_facadeParam_espacement (
 
 
 )
+
 struct	str_facadeParam_murPlein (
 		private
 			----- membres communs --------------
@@ -931,8 +935,6 @@ struct	str_facadeParam_baie (
 		
 )
 
-
-
 struct	str_facadeParam_balcon (
 	private
 		----- membres communs --------------
@@ -1068,7 +1070,6 @@ struct	str_facadeParam_balcon (
 
 )
 
-
 struct	str_facadeParam_balconFin (
 	private
 		----- membres communs --------------
@@ -1098,6 +1099,120 @@ struct	str_facadeParam_balconFin (
 		
 		
 	------ fonctions -------
+		fn actualiser 			_compo		_construc	= (
+			m_construction 		= _construc
+			m_geo					=	m_construction.geo_ptr
+			m_compo 				= _compo
+		),
+		
+		fn initialiser 			_compo		_construc	= (
+			
+			actualiser 			_compo		_construc	
+			
+			m_compo.nom 		= "Balcon - fin"
+			m_compo.longueur 	= 0
+			m_compo.hauteur 	= 0
+		),
+		fn initialiser_dialog 	roll_prt 	=(
+			dialog.m_compo 	= m_compo
+			dialog.m_rollPrt	= roll_prt
+			dialog.m_param	=	this
+			dialog.actualiser()
+		),
+		
+		
+	------ CONSTRUIRE -------
+		fn construire	 _id_pt_bas		_id_pt_ht		_normDir		_this 		= (
+	-- 		format "CONSTRUIRE : lg = %\n" m_compo.longueur
+			local pt1 =  polyop.getVert 	_this.delegate		_id_pt_bas	
+			local pt2 = pt1 + _normDir * m_compo.longueur
+			
+			m_construction.creer_mur 	_id_pt_bas		_id_pt_ht	pt2 	_this		matID:matID.mur
+			
+		),
+		
+		----- events ------------------------------------------
+		on create do 	
+			for i= 1 to 10 do id += ( random 0 9 ) as string	
+
+
+)
+
+struct	str_facadeParam_modele (
+	private
+		----- membres communs --------------
+		m_compo,								---- le composant parant	
+
+		m_construction,
+		m_geo,
+		matID = str_prefs_matID (),
+		
+	public
+		id				= "#FAC_PBF_",			--- Parametre Balcon Fin
+		dialog 		= 		
+		rollout dialog "Balcon - fin" width:180 height:70	(
+										local m_compo
+										local m_rollPrt
+										local m_param
+										
+											fn actualiser =(
+											)
+
+									),
+						
+	---- membres  spécifiques	----------
+		
+-- 		balcon_debut		=	#(),
+								
+		
+		
+	------ fonctions -------
+	private	
+		
+		--------------------------------------------------------------------------------------------------------
+		----------------	 Manipulations MODELE	 	----------------------------------------------------
+		--------------------------------------------------------------------------------------------------------		
+		fn positionnerPivot_modele	 _node =(
+			local segmentsOuverts 	= polyop.getOpenEdges _node
+			local pointsSegsOuverts 	=#()
+			local pointsResult 			=[0,0,0]
+			for seg in segmentsOuverts do (
+				local ptsDuSegment = polyop.getVertsUsingEdge   _node	seg
+				for pt in ptsDuSegment do
+					appendIfUnique pointsSegsOuverts	pt
+			)
+			
+			--- on cherche le point  ------
+			format "pointsSegsOuverts : %\n" pointsSegsOuverts
+			
+			for idPt in pointsSegsOuverts do (
+				
+				if idPt == pointsSegsOuverts[1] then pointsResult = _node.verts[ idPt ].pos
+				else (
+					local pt =_node.verts[ idPt ].pos
+					if pt.x < pointsResult.x do pointsResult = pt
+					if pt.y < pointsResult.y do pointsResult = pt
+					if pt.z < pointsResult.z do pointsResult = pt
+				)
+			)
+			_node.pivot = pointsResult
+			
+		),
+		fn preparer_modele 	_node	=(
+			
+				--- preparation du model -------
+				local nvModel_node = copy _node 
+				convertToPoly 	nvModel_node
+				local  BB = nodeGetBoundingBox 	nvModel_node	(matrix3 1)
+				positionnerPivot_modele 	nvModel_node
+				nvModel_node.rotation = quat 0 0 0 1
+				nvModel_node.pos  = [0,0,0]
+				
+				nvModel_node
+		),
+		
+	
+	public
 		fn actualiser 			_compo		_construc	= (
 			m_construction 		= _construc
 			m_geo					=	m_construction.geo_ptr

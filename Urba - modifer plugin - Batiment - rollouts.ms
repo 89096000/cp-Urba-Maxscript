@@ -489,6 +489,7 @@ rollout roll_facades "Façades" width:510 height:813
 	
 	button 'btn_supprimerFacade' "-" pos:[156,-1] width:16 height:16 align:#left
 
+	button 'btn_dupliquer' "Dup" pos:[96,0] width:27 height:16 align:#left
 	fn actualiser =(
 -- 			debug "actualiser"
 		
@@ -509,7 +510,6 @@ rollout roll_facades "Façades" width:510 height:813
 	 
 	
 		
-	button 'btn_dupliquer' "Dup" pos:[96,0] width:27 height:16 align:#left
 	on roll_facades open do
 	(
 			facades.params_toStructs		this
@@ -535,8 +535,9 @@ rollout roll_facades "Façades" width:510 height:813
 	-- 			actualiser() 
 			)
 	on btn_supprimerFacade pressed do
-	(
-				facades.supprimer  lbx_facades.selection	 this
+		if queryBox "Supprimer la façade ?"	title:"Urba | Bâtiment | Façade" 	do 
+			with undo "supprimer" on (
+				facades.supprimer_facade  lbx_facades.selection	 this
 				actualiser()
 			)
 	on btn_dupliquer pressed do
