@@ -27,9 +27,9 @@ struct str_presets_batiment (
 		
 		------------ MEMBRES	----------------------------------------------------------------------------------
 	public
-		fichier_dossier 	= "",		--- a initialiser a la creation ---------
-		fichier_categorie	= "",		--- a initialiser a la creation ---------
-		fichier_extension	= "",		--- a initialiser a la creation ---------
+		fichier_dossier 		= "",		--- a initialiser a la creation ---------
+		fichier_categorie		= "",		--- a initialiser a la creation ---------
+		fichier_extension		= "",		--- a initialiser a la creation ---------
 		
 		params_aEnregistrer	=#(),	--- liste des parametres à enregistrer et charger	--- a initialiser a la creation ---------
 		

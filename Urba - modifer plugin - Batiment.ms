@@ -76,6 +76,7 @@ extends:Editable_poly replaceUI:true version:0
 	
 	include "$userScripts\cp-Urba\Urba - modifer plugin - Batiment - presets.ms"
 	include "$userScripts\cp-Urba\Urba - modifer plugin - Batiment - structures.ms"
+	include "$userScripts\cp-Urba\Urba - modifer plugin - Batiment - Facades.ms"
 	include "$userScripts\cp-Urba\Urba - modifer plugin - Batiment - tracé.ms"
 	include "$userScripts\cp-Urba\Urba - modifer plugin - Batiment - Construire.ms"
 	
@@ -91,10 +92,10 @@ extends:Editable_poly replaceUI:true version:0
 	---- le model dessiné d'un batiment vide ------------------
 	local traceLogo = #([14.1994,37.717,0], [14.1994,-189.586,0], [287.927,-189.586,0], [287.927,139.601,0], [174.501,253.027,0], [174.501,479.879,0], [61.0754,479.879,0], [61.0754,366.453,0], [-52.3504,479.879,0], [-392.628,139.601,0], [-392.628,-189.586,0], [-118.9,-189.586,0], [-118.9,37.717,0])
 
-	local params_aEnregistrer = 	#(		/*  ----	Global  	----  */		#niveaux_hauteur, #niveaux_nbre, #axeP_orientation,
-													/*  ----	Toiture 	----  */		#toit_pente, #toit_type, #toit_hauteur ,
-													/*  ----	Tracé  	----  */		#trace_optimiser, #trace_souder, #trace_ortho, #seuil_optimiser, #seuil_souder, #seuil_ortho , #trace_aligner, #seuil_aligner ,	-- #trace_decouper, 
-													/*  ----	 Facades  	----  */		#facades_composants , #facades_items, #facades_modeles, #facades_parametriques
+	local params_aEnregistrer = 	#(		/*----	Global  	----*/		#niveaux_hauteur, 			#niveaux_nbre, 	#axeP_orientation,
+													/*----	Toiture 	----*/		#toit_pente, 					#toit_type, 		#toit_hauteur ,
+													/*----	Tracé  	----*/		#trace_optimiser, 			#trace_souder, 	#trace_ortho, 		#seuil_optimiser, 				#seuil_souder, 	#seuil_ortho , 	#trace_aligner, 	#seuil_aligner ,	-- #trace_decouper, 
+													/*----	 Facades  	----*/		#facades_composants , 	#facades_items, 	#facades_modeles, 	#facades_parametriques
 											)
 
 	
@@ -105,20 +106,20 @@ extends:Editable_poly replaceUI:true version:0
 	--------------- import des STRUCTURES  ----------------------------------------------------------------------------------------------------------------------
 	
 	
-	local geo 			= 	str_geo 			()
-	local construire	=	str_construire	geo_ptr:geo
-	local facades		=	str_facades	constr_ptr:construire
-	local trace			=	str_trace 		geo_ptr:geo
+	local geo 			= 	str_geo 				m_this:this
+	local construire	=	str_construire		m_this:this		m_geo:geo  					
+	local facades		=	str_facades		m_this:this		m_construire:construire
+	local trace			=	str_trace 			m_this:this		m_geo:geo
 	
 	local presets 	= str_presets_batiment 	fichier_dossier:			( getDir #userScripts	 + "\\cp-Urba\\lib\\batiments\\"		)	\
-																fichier_categorie:		"Urba - Bâtiment"	\
-																fichier_extension:		"btm"	\
-																params_aEnregistrer:	params_aEnregistrer
+															fichier_categorie:			"Urba - Bâtiment"	\
+															fichier_extension:			"btm"	\
+															params_aEnregistrer:	params_aEnregistrer
 
 	local nodeScanner = str_enregistreurDeNode ()
 	
 	--------------- FONCTIONS  ----------------------------------------------------------------------------------------------------------------------	
-	------ Affichage - ViewPort------------
+	------------ Affichage - ViewPort ------------------------------------------------
 	fn	fn_VP_afficher_axePrincipal		 =(
 		
 		gw.setTransform (matrix3 1)
@@ -242,7 +243,7 @@ extends:Editable_poly replaceUI:true version:0
 				
 				---- les pignons et gouttereaux -----
 				local col = red
-				local estPignon = o.trace.est_pignon i o
+				local estPignon = o.trace.est_pignon i 
 				if estPignon then (
 					if o.affiche_pignons do (
 						gw.setColor	#line	blue
@@ -287,43 +288,41 @@ extends:Editable_poly replaceUI:true version:0
 		) else
 			polyop.unHideAllFaces 	this.delegate
 	)
-	------ Rollouts------------
+	---- Rollouts------------
 	fn actualiser_rollouts =(
--- 		debug "actualiser_rollouts 0"
 		
 		roll_presets.actualiser 	()	
-		
-		roll_trace.actualiser 	()			
-		
-		roll_global.actualiser 	()		
--- 		debug "actualiser_rollouts 1"
-		
+		roll_trace.actualiser 	()		
+		roll_global.actualiser 	()				
 		roll_facades.actualiser 	()
--- 		debug "actualiser_rollouts 2"
-		
 		roll_toiture.actualiser	()
--- 		debug "actualiser_rollouts 3"
-		
 		roll_infos.actualiser 		()
--- 		debug "actualiser_rollouts : OK"
 		
 	)
 	---- Reconstruit le batiment ---
 	fn actualiser_geometrie =(
-		
-		facades.params_toStructs 	this
-		
-		construire.batiment 	this
+-- 		facades.params_toStructs 	this		
+		construire.batiment 	()
+	)
+	
+	fn initialiser =(
+		geo.m_this 				= this
+		construire.m_this 	= this
+		facades.m_this 		= this
+		trace.m_this 			= this
 	)
 	
 	
-	fn assigner_trace 	_nvtrace	_node	= (
-		
-		trace.definir		_nvtrace	_node
-		trace.actualiser	this
-		construire.batiment this
-		
-	)
+	
+	------------  Interface ------------------------------------------------
+	---- assigner un tracé -----
+	fn assigner_trace 	_nvtrace	_node	=
+		if _nvtrace != undefined do (
+			trace.definir		_nvtrace	_node
+			trace.actualiser		()
+			construire.batiment 	()
+			
+		)
 	
 	
 	
@@ -336,34 +335,44 @@ extends:Editable_poly replaceUI:true version:0
 		)
 	)
 	
+	
 	--------------- import des PARAMETRES  et rollouts ----------------------------------------------------------------------------------------------------------------------	
 	include "$userScripts\cp-Urba\Urba - modifer plugin - Batiment - rollouts.ms"
+	
+	
 	
 	--------------- EVENEMENTS  ----------------------------------------------------------------------------------------------------------------------	
 	on load 						do 	(
 		debug "load du plugin" 
 		VP_toggle ()
--- 		trace.actualiser 	this	 
--- 		facades.params_toStructs		this
+		initialiser ()
 	)
 	on clone 	_original 	do (
 		debug "clone du plugin" 
-		facades.params_toStructs		this
-		trace.actualiser 	this	 
--- 		trace.params_toStructs 	this	
--- 		initialiser ()
+		
+		initialiser ()
+		
+-- 		facades.params_toStructs		this
+-- 		trace.actualiser 	this	 
+		
 	)
 	on create do (
 		debug "creation du plugin"		
+		
+		initialiser ()
+		
 		--- le dessin du logo --------
 		trace_courant = traceLogo
-		geo.creerFace trace_courant		this
+		geo.pointsEtFaces 	trace_courant	
 	)
 	
 	on update do	(
 		debug "update du plugin"	
--- 		facades.params_toStructs		this
--- 		if version == 0 then 		format "maj de le version 0->1\n"	
+		
+-- 		try 
+			initialiser () 
+-- 		catch ()
+		
 	)
 	
 ) --- fin du plug ---
@@ -380,23 +389,30 @@ extends:Editable_poly replaceUI:true version:0
 
 
 
-try delete $ catch ()
+-- try delete $ catch ()
 
 debug_mode =false
 -- debug_mode =true
 
--- for obj in objects do if superclassof obj == GeometryClass and obj != $'triple002'  and obj != $'Porte002'  and obj != $'Porte003' do delete obj
+-- 
+
+for obj in objects do if superclassof obj == GeometryClass and obj != $'Rectangle001'  and obj != $'Porte002'  and obj != $'Porte003' do delete obj
 bat1 = urba_batiment ()
 clearlistener ()
 for obj in helpers do delete obj
 
-bat1.assigner_trace 	$'Tracé - batiments - 121'	bat1
+bat1.assigner_trace 	$'Rectangle001'	bat1
 -- bat1.assigner_trace 	$Shape009	bat1
 
 -- bat1.facades.creer_facade 	bat1
 
 
 select bat1
+
+
+
+
+
 
 select $popo
 

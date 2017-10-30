@@ -118,14 +118,24 @@ struct str_facade_modele (
 
 
 
-
+struct str_facadeParam_commun (
+		
+		m_compo,								---- le composant parant	
+		m_this,
+		
+		m_construction,
+		m_geo,
+		matID = str_prefs_matID ()
+		
+)
 
 -----------------------	FACADES PARAMETRIQUES	-------------------------------------------------------------------------------------------------------------
 struct	str_facadeParam_espacement (
 	private
 		----- membres communs --------------
 		m_compo,								---- le composant parant	
-
+		m_this,
+		
 		m_construction,
 		m_geo,
 		matID = str_prefs_matID (),
@@ -143,7 +153,8 @@ struct	str_facadeParam_espacement (
 	------ fonctions -------
 		fn actualiser 			_compo		_construc	= (
 			m_construction 		= _construc
-			m_geo					=	m_construction.geo_ptr
+			m_geo					=	m_construction.m_geo
+			m_this					=	m_construction.m_this
 			m_compo 				= _compo
 		),
 		
@@ -164,7 +175,7 @@ struct	str_facadeParam_espacement (
 		
 		
 	------ CONSTRUIRE -------
-		fn construire	 _id_pt_bas		_id_pt_ht		_normDir		_this 		= (
+		fn construire	 _id_pt_bas		_id_pt_ht		_normDir		 		= (
 		),
 		
 		----- events ------------------------------------------
@@ -178,7 +189,7 @@ struct	str_facadeParam_murPlein (
 		private
 			----- membres communs --------------
 			m_compo,								---- le composant parant	
-	
+			m_this,
 			m_construction,
 			m_geo,
 			matID = str_prefs_matID (),
@@ -217,8 +228,9 @@ struct	str_facadeParam_murPlein (
 		------ fonctions -------
 			fn actualiser 			_compo		_construc	= (
 				m_construction 		= _construc
-				m_geo					=	m_construction.geo_ptr
+				m_geo					=	m_construction.m_geo
 				m_compo 				= _compo
+				m_this					=	m_construction.m_this
 			),
 			fn initialiser 			_compo		_construc	= (
 				
@@ -237,14 +249,14 @@ struct	str_facadeParam_murPlein (
 			
 			
 		------ CONSTRUIRE -------
-			fn construire	 pts_accroches		_normDir		_this 		= (
+			fn construire	 pts_accroches		_normDir		 		= (
 				
 				--- Result -------------
 				local pt_result_1, pt_result_2, pt_result_3
 				
 				--- Vecteurs ------------
-				local vec_ep_dalle 	= [0,0,1] 		* 	_this.ep_dalle		
-				local vec_ht 			= [0,0,1] 		* 	_this.niveaux_hauteur				
+				local vec_ep_dalle 	= [0,0,1] 		* 	m_this.ep_dalle		
+				local vec_ht 			= [0,0,1] 		* 	m_this.niveaux_hauteur				
 				local vec_longueur 	= _normDir 	* 	m_compo.longueur
 				
 				--- Points d'accroche ------------
@@ -252,9 +264,9 @@ struct	str_facadeParam_murPlein (
 				local id_ptAccroche_2 	= pts_accroches[2]
 				local id_ptAccroche_3 	= pts_accroches[3]
 				
-				local ptAccroche_1		=	polyop.getVert 	_this.delegate		id_ptAccroche_1	
-				local ptAccroche_2		=	polyop.getVert 	_this.delegate		id_ptAccroche_2	
-				local ptAccroche_3		=	polyop.getVert 	_this.delegate		id_ptAccroche_3	
+				local ptAccroche_1		=	polyop.getVert 	m_this.delegate		id_ptAccroche_1	
+				local ptAccroche_2		=	polyop.getVert 	m_this.delegate		id_ptAccroche_2	
+				local ptAccroche_3		=	polyop.getVert 	m_this.delegate		id_ptAccroche_3	
 				
 				
 				
@@ -265,11 +277,11 @@ struct	str_facadeParam_murPlein (
 				
 				--- creation des points --------------
 				local pts_pos 	= #( pt_2, pt_3 )
-				local pts_ids 	= m_geo.creer.points 	pts_pos		_this
+				local pts_ids 	= m_geo.points 	pts_pos		
 				
 				-------	Creation des faces 	--------
-				local nvlFace = m_geo.creer.face 		#(	 id_ptAccroche_1, 		pts_ids[1], 		pts_ids[2], 		id_ptAccroche_2	)		 _this	
-				polyop.setFaceMatID	 _this.delegate		nvlFace	  ( matID.mur + 1 )
+				local nvlFace = m_geo.face 		#(	 id_ptAccroche_1, 		pts_ids[1], 		pts_ids[2], 		id_ptAccroche_2	)		 	
+				polyop.setFaceMatID	 m_this.delegate		nvlFace	  ( matID.mur + 1 )
 				
 				--- Result -------------
 				pt_result_1 = pts_ids[1]
@@ -283,11 +295,11 @@ struct	str_facadeParam_murPlein (
 				
 				--- creation des points --------------
 				local pts_pos 	= #( pt_3 )
-				local pts_ids 	= m_geo.creer.points 	pts_pos		_this
+				local pts_ids 	= m_geo.points 	pts_pos		
 				
 				-------	Creation des faces 	--------
-				local nvlFace = m_geo.creer.face 		#(	 		id_ptAccroche_2, 		pt_result_2, 		pts_ids[1], 		id_ptAccroche_3	)		 _this	
-				polyop.setFaceMatID	 _this.delegate		nvlFace	  matID.mur
+				local nvlFace = m_geo.face 		#(	 		id_ptAccroche_2, 		pt_result_2, 		pts_ids[1], 		id_ptAccroche_3	)		 	
+				polyop.setFaceMatID	 m_this.delegate		nvlFace	  matID.mur
 				
 				--- Result -------------
 				pt_result_3 = pts_ids[1]
@@ -310,6 +322,7 @@ struct	str_facadeParam_baie (
 		private
 			----- membres communs --------------
 			m_compo,								---- le composant parant	
+			m_this,
 			m_construction,
 			m_geo,
 			matID = str_prefs_matID (),
@@ -535,19 +548,19 @@ struct	str_facadeParam_baie (
 						,
 			
 		------ CONSTRUIRE -------
-			fn construire	 pts_accroches		_normDir		_this 		est_DansBalcon:false	= (
+			fn construire	 pts_accroches		_normDir		 		est_DansBalcon:false	= (
 				
 				--- Result -------------
 				local pt_result_1, pt_result_2, pt_result_3
 				
 				--- Vecteurs ------------
-				local vec_ep_dalle 	= [0,0,1] 		* 	_this.ep_dalle		
+				local vec_ep_dalle 	= [0,0,1] 		* 	m_this.ep_dalle		
 				local vec_allege 		= if baie_allege_use 	then 	[0,0,0] 
 																			else		[0,0,1] *	baie_allege_hauteur
 				local vec_rtmb 		= if baie_hauteur_use 	then 	[0,0,0] 
-																			else		[0,0,1] *	( _this.niveaux_hauteur - (baie_allege_hauteur + m_compo.hauteur ) )				
+																			else		[0,0,1] *	( m_this.niveaux_hauteur - (baie_allege_hauteur + m_compo.hauteur ) )				
 				local norm_prof		= _normDir 	* rotateZ ( matrix3 1 ) 90				
-				local vec_ht 			= if baie_hauteur_use 	then 	[0,0,1] *	 _this.niveaux_hauteur
+				local vec_ht 			= if baie_hauteur_use 	then 	[0,0,1] *	 m_this.niveaux_hauteur
 																			else		[0,0,1] * 	m_compo.hauteur				
 				local vec_longueur 	= _normDir * m_compo.longueur
 				local norm_prof		= _normDir * rotateZ ( matrix3 1 ) 90
@@ -558,9 +571,9 @@ struct	str_facadeParam_baie (
 				local id_ptAccroche_2 	= pts_accroches[2]
 				local id_ptAccroche_3 	= pts_accroches[3]
 				
-				local ptAccroche_1		=	polyop.getVert 	_this.delegate		id_ptAccroche_1	
-				local ptAccroche_2		=	polyop.getVert 	_this.delegate		id_ptAccroche_2	
-				local ptAccroche_3		=	polyop.getVert 	_this.delegate		id_ptAccroche_3	
+				local ptAccroche_1		=	polyop.getVert 	m_this.delegate		id_ptAccroche_1	
+				local ptAccroche_2		=	polyop.getVert 	m_this.delegate		id_ptAccroche_2	
+				local ptAccroche_3		=	polyop.getVert 	m_this.delegate		id_ptAccroche_3	
 				
 				
 				
@@ -571,11 +584,11 @@ struct	str_facadeParam_baie (
 				
 				--- creation des points --------------
 				local pts_pos 	= #( pt_2, pt_3 )
-				local pts_ids 	= m_geo.creer.points 	pts_pos		_this
+				local pts_ids 	= m_geo.points 	pts_pos		
 				
 				-------	Creation des faces 	--------
-				local nvlFace = m_geo.creer.face 		#(	 id_ptAccroche_1, 		pts_ids[1], 		pts_ids[2], 		id_ptAccroche_2	)		 _this	
-				polyop.setFaceMatID	 _this.delegate		nvlFace	  ( matID.mur + 1 )
+				local nvlFace = m_geo.face 		#(	 id_ptAccroche_1, 		pts_ids[1], 		pts_ids[2], 		id_ptAccroche_2	)		 	
+				polyop.setFaceMatID	 m_this.delegate		nvlFace	  ( matID.mur + 1 )
 				
 				--- Result -------------
 				pt_result_1 = pts_ids[1]
@@ -604,7 +617,7 @@ struct	str_facadeParam_baie (
 				
 				--- creation des points --------------
 				local pts_pos 	= #( 	pt_1, pt_2, pt_3, pt_4, pt_5, pt_6, pt_7, pt_8, pt_9, pt_10 )
-				local pts_ids 	= m_geo.creer.points 	pts_pos		_this
+				local pts_ids 	= m_geo.points 	pts_pos		
 				
 				--- Result -------------
 				pt_result_3 = pts_ids[6]
@@ -614,24 +627,24 @@ struct	str_facadeParam_baie (
 				local ids_pts_racc_menuis =#(pts_ids[7], pts_ids[8], pts_ids[9], pts_ids[10])
 				
 				-------	Creation des faces 	--------
-				local nvlFace = m_geo.creer.face 		#(	id_ptAccroche_2, 	pts_ids[1], 		pts_ids[2], 		pts_ids[3] )		 _this	
-				polyop.setFaceMatID	 _this.delegate		nvlFace	  matID.mur
+				local nvlFace = m_geo.face 		#(	id_ptAccroche_2, 	pts_ids[1], 		pts_ids[2], 		pts_ids[3] )		 	
+				polyop.setFaceMatID	 m_this.delegate		nvlFace	  matID.mur
 				
-				local nvlFace = m_geo.creer.face 		#(	pts_ids[3], 		pts_ids[2], 		pts_ids[8] , 	pts_ids[7] )		 _this	
-				if tablette_use and not est_DansBalcon	then	polyop.setFaceMatID	 _this.delegate		nvlFace	  matID.menuiserie
-																		else 	polyop.setFaceMatID	 _this.delegate		nvlFace	  matID.mur
+				local nvlFace = m_geo.face 		#(	pts_ids[3], 		pts_ids[2], 		pts_ids[8] , 	pts_ids[7] )		 	
+				if tablette_use and not est_DansBalcon	then	polyop.setFaceMatID	 m_this.delegate		nvlFace	  matID.menuiserie
+																		else 	polyop.setFaceMatID	 m_this.delegate		nvlFace	  matID.mur
 				
-				local nvlFace = m_geo.creer.face 		#(	pts_ids[10], 	pts_ids[9], 		pts_ids[5], 		pts_ids[4] )		 _this
-				polyop.setFaceMatID	 _this.delegate		nvlFace	  matID.mur
+				local nvlFace = m_geo.face 		#(	pts_ids[10], 	pts_ids[9], 		pts_ids[5], 		pts_ids[4] )		 
+				polyop.setFaceMatID	 m_this.delegate		nvlFace	  matID.mur
 				
-				local nvlFace = m_geo.creer.face 		#(	pts_ids[4], 		pts_ids[5], 		pts_ids[6], 		id_ptAccroche_3 )			 _this		
-				polyop.setFaceMatID	 _this.delegate		nvlFace	  matID.mur
+				local nvlFace = m_geo.face 		#(	pts_ids[4], 		pts_ids[5], 		pts_ids[6], 		id_ptAccroche_3 )			 		
+				polyop.setFaceMatID	 m_this.delegate		nvlFace	  matID.mur
 				
-				local nvlFace = m_geo.creer.face 		#(	pts_ids[3], 		pts_ids[7], 		pts_ids[10],   	pts_ids[4] )		 _this	
-				polyop.setFaceMatID	 _this.delegate		nvlFace	  matID.mur
+				local nvlFace = m_geo.face 		#(	pts_ids[3], 		pts_ids[7], 		pts_ids[10],   	pts_ids[4] )		 	
+				polyop.setFaceMatID	 m_this.delegate		nvlFace	  matID.mur
 				
-				local nvlFace = m_geo.creer.face 		#(	pts_ids[8], 		pts_ids[2], 		pts_ids[5],   	pts_ids[9] )		 _this		
-				polyop.setFaceMatID	 _this.delegate		nvlFace	  matID.mur
+				local nvlFace = m_geo.face 		#(	pts_ids[8], 		pts_ids[2], 		pts_ids[5],   	pts_ids[9] )		 		
+				polyop.setFaceMatID	 m_this.delegate		nvlFace	  matID.mur
 				
 				
 				
@@ -649,10 +662,10 @@ struct	str_facadeParam_baie (
 				local vec_men_travHt		=	[0,0,1] 		*	menuis_trav_ht
 				
 				-------	Placement des points 	--------
-				local pt_A	= polyop.getVert 	_this.delegate		ids_pts_racc_menuis[1]		
-				local pt_B	= polyop.getVert 	_this.delegate		ids_pts_racc_menuis[2]		
-				local pt_C	= polyop.getVert 	_this.delegate		ids_pts_racc_menuis[3]		
-				local pt_D	= polyop.getVert 	_this.delegate		ids_pts_racc_menuis[4]
+				local pt_A	= polyop.getVert 	m_this.delegate		ids_pts_racc_menuis[1]		
+				local pt_B	= polyop.getVert 	m_this.delegate		ids_pts_racc_menuis[2]		
+				local pt_C	= polyop.getVert 	m_this.delegate		ids_pts_racc_menuis[3]		
+				local pt_D	= polyop.getVert 	m_this.delegate		ids_pts_racc_menuis[4]
 				
 				local pt_1		= pt_A		+ 	vec_men_lrg 	+ 	vec_men_ht
 				local pt_2		= pt_B		- 	vec_men_lrg 	+ 	vec_men_ht
@@ -667,30 +680,30 @@ struct	str_facadeParam_baie (
 				
 				--- creation des points --------------
 				local pts_pos 	= #( 	pt_1, pt_2, pt_3, pt_4, pt_5, pt_6, pt_7, pt_8 )
-				local pts_ids 	= m_geo.creer.points 	pts_pos		_this
+				local pts_ids 	= m_geo.points 	pts_pos		
 				
 				----- pour plus tard, ... 
 				local pts_pourOuvrant	= #( pt_5, pt_6, pt_7, pt_8  )
 				
 				---- cadre ------
-				local nvlFace = m_geo.creer.face 		#(	ids_pts_racc_menuis[1]	, 			ids_pts_racc_menuis[2]	, 			ids_pts_racc_menuis[3]	, 			ids_pts_racc_menuis[4]	 ,
+				local nvlFace = m_geo.face 		#(	ids_pts_racc_menuis[1]	, 			ids_pts_racc_menuis[2]	, 			ids_pts_racc_menuis[3]	, 			ids_pts_racc_menuis[4]	 ,
 													pts_ids[4], 		pts_ids[3], 		pts_ids[2], 		pts_ids[1] , 	
-													pts_ids[4], 		ids_pts_racc_menuis[4]	 )		 _this		
-				polyop.setFaceMatID	 _this.delegate		nvlFace	  matID.menuiserie			
+													pts_ids[4], 		ids_pts_racc_menuis[4]	 )		 		
+				polyop.setFaceMatID	 m_this.delegate		nvlFace	  matID.menuiserie			
 				
-				local nvlFace = m_geo.creer.face 		#(	pts_ids[1], 	pts_ids[2], 	pts_ids[6],   	pts_ids[5]  )			 _this		
-				polyop.setFaceMatID	 _this.delegate		nvlFace	  matID.menuiserie	
-				local nvlFace = m_geo.creer.face 		#(	pts_ids[6], 	pts_ids[2], 	pts_ids[3],   	pts_ids[7]  )			 _this		
-				polyop.setFaceMatID	 _this.delegate		nvlFace	  matID.menuiserie	
-				local nvlFace = m_geo.creer.face 		#(	pts_ids[7], 	pts_ids[3], 	pts_ids[4],   	pts_ids[8]  )			 _this		
-				polyop.setFaceMatID	 _this.delegate		nvlFace	  matID.menuiserie	
-				local nvlFace = m_geo.creer.face 		#(	pts_ids[1], 	pts_ids[5], 	pts_ids[8],   	pts_ids[4]  )			 _this			
-				polyop.setFaceMatID	 _this.delegate		nvlFace	  matID.menuiserie
+				local nvlFace = m_geo.face 		#(	pts_ids[1], 	pts_ids[2], 	pts_ids[6],   	pts_ids[5]  )			 		
+				polyop.setFaceMatID	 m_this.delegate		nvlFace	  matID.menuiserie	
+				local nvlFace = m_geo.face 		#(	pts_ids[6], 	pts_ids[2], 	pts_ids[3],   	pts_ids[7]  )			 		
+				polyop.setFaceMatID	 m_this.delegate		nvlFace	  matID.menuiserie	
+				local nvlFace = m_geo.face 		#(	pts_ids[7], 	pts_ids[3], 	pts_ids[4],   	pts_ids[8]  )			 		
+				polyop.setFaceMatID	 m_this.delegate		nvlFace	  matID.menuiserie	
+				local nvlFace = m_geo.face 		#(	pts_ids[1], 	pts_ids[5], 	pts_ids[8],   	pts_ids[4]  )			 			
+				polyop.setFaceMatID	 m_this.delegate		nvlFace	  matID.menuiserie
 				
 				--- la face du fond -----------
 -- 				if not menuis_ouvrant_use do (
-					local nvlFace = m_geo.creer.face 		#(	pts_ids[5], 	pts_ids[6], 	pts_ids[7],   	pts_ids[8]  )			 _this			
-					polyop.setFaceMatID	 _this.delegate		nvlFace	  matID.vitrage
+					local nvlFace = m_geo.face 		#(	pts_ids[5], 	pts_ids[6], 	pts_ids[7],   	pts_ids[8]  )			 			
+					polyop.setFaceMatID	 m_this.delegate		nvlFace	  matID.vitrage
 				
 -- 				)
 				
@@ -720,19 +733,19 @@ struct	str_facadeParam_baie (
 					
 					--- creation des points --------------
 					local pts_pos 	= #( 	pt_1, pt_2, pt_3, pt_4, pt_5, pt_6, pt_7, pt_8, pt_9, pt_10 )
-					local pts_ids 	= m_geo.creer.points 	pts_pos		_this
+					local pts_ids 	= m_geo.points 	pts_pos		
 					
 					-------	Creation des faces 	--------
-					local nvlFace = m_geo.creer.face 		#(	pts_ids[5], 		pts_ids[6], 		pts_ids[2], 		pts_ids[1] )		 _this			
-					polyop.setFaceMatID	 _this.delegate		nvlFace	  matID.menuiserie			
-					local nvlFace = m_geo.creer.face 		#(	pts_ids[1], 		pts_ids[2], 		pts_ids[3] , 	pts_ids[4] )		 _this				
-					polyop.setFaceMatID	 _this.delegate		nvlFace	  matID.menuiserie					
-					local nvlFace = m_geo.creer.face 		#(	pts_ids[4], 		pts_ids[3], 		pts_ids[7] , 	pts_ids[8] )		 _this		
-					polyop.setFaceMatID	 _this.delegate		nvlFace	  matID.menuiserie			
-					local nvlFace = m_geo.creer.face 		#(	pts_ids[5], 		pts_ids[1], 		pts_ids[4], 		pts_ids[8] )		 _this		
-					polyop.setFaceMatID	 _this.delegate		nvlFace	  matID.menuiserie			
-					local nvlFace = m_geo.creer.face 		#(	pts_ids[2], 		pts_ids[6], 		pts_ids[7], 		pts_ids[3] )		 _this				
-					polyop.setFaceMatID	 _this.delegate		nvlFace	  matID.menuiserie			
+					local nvlFace = m_geo.face 		#(	pts_ids[5], 		pts_ids[6], 		pts_ids[2], 		pts_ids[1] )		 			
+					polyop.setFaceMatID	 m_this.delegate		nvlFace	  matID.menuiserie			
+					local nvlFace = m_geo.face 		#(	pts_ids[1], 		pts_ids[2], 		pts_ids[3] , 	pts_ids[4] )		 				
+					polyop.setFaceMatID	 m_this.delegate		nvlFace	  matID.menuiserie					
+					local nvlFace = m_geo.face 		#(	pts_ids[4], 		pts_ids[3], 		pts_ids[7] , 	pts_ids[8] )		 		
+					polyop.setFaceMatID	 m_this.delegate		nvlFace	  matID.menuiserie			
+					local nvlFace = m_geo.face 		#(	pts_ids[5], 		pts_ids[1], 		pts_ids[4], 		pts_ids[8] )		 		
+					polyop.setFaceMatID	 m_this.delegate		nvlFace	  matID.menuiserie			
+					local nvlFace = m_geo.face 		#(	pts_ids[2], 		pts_ids[6], 		pts_ids[7], 		pts_ids[3] )		 				
+					polyop.setFaceMatID	 m_this.delegate		nvlFace	  matID.menuiserie			
 					
 				)
 				
@@ -756,22 +769,22 @@ struct	str_facadeParam_baie (
 					
 					--- creation des points --------------
 					local pts_pos 	= #( 	pt_1, pt_2, pt_3, pt_4, pt_5, pt_6, pt_7, pt_8 )
-					local pts_ids 	= m_geo.creer.points 	pts_pos		_this
+					local pts_ids 	= m_geo.points 	pts_pos		
 					
 					
 					-------	Creation des faces 	--------
-					local nvlFace = m_geo.creer.face 		#(	pts_ids[5], 		pts_ids[6], 		pts_ids[2], 		pts_ids[1] )		 _this			
-					polyop.setFaceMatID	 _this.delegate		nvlFace	  matID.menuiserie						
-					local nvlFace = m_geo.creer.face 		#(	pts_ids[1], 		pts_ids[2], 		pts_ids[3] , 	pts_ids[4] )		 _this				
-					polyop.setFaceMatID	 _this.delegate		nvlFace	  matID.menuiserie					
-					local nvlFace = m_geo.creer.face 		#(	pts_ids[4], 		pts_ids[3], 		pts_ids[7] , 	pts_ids[8] )		 _this		
-					polyop.setFaceMatID	 _this.delegate		nvlFace	  matID.menuiserie			
+					local nvlFace = m_geo.face 		#(	pts_ids[5], 		pts_ids[6], 		pts_ids[2], 		pts_ids[1] )		 			
+					polyop.setFaceMatID	 m_this.delegate		nvlFace	  matID.menuiserie						
+					local nvlFace = m_geo.face 		#(	pts_ids[1], 		pts_ids[2], 		pts_ids[3] , 	pts_ids[4] )		 				
+					polyop.setFaceMatID	 m_this.delegate		nvlFace	  matID.menuiserie					
+					local nvlFace = m_geo.face 		#(	pts_ids[4], 		pts_ids[3], 		pts_ids[7] , 	pts_ids[8] )		 		
+					polyop.setFaceMatID	 m_this.delegate		nvlFace	  matID.menuiserie			
 					
 -- 					-- la face vitre du bas
 -- 					local pts_pos 	= #( 	 pts_pourOuvrant[1], pts_pourOuvrant[2] ,pt_6 , pt_5)
--- 					local pts_ids 	= m_geo.creer.points 	pts_pos		_this
--- 					local nvlFace = m_geo.creer.face 		#(pts_ids[1], 		pts_ids[2]	, 		pts_ids[3] , 	pts_ids[4] )		 _this		
--- 					polyop.setFaceMatID	 _this.delegate		nvlFace	  matID.vitrage			
+-- 					local pts_ids 	= m_geo.points 	pts_pos		m_this
+-- 					local nvlFace = m_geo.face 		#(pts_ids[1], 		pts_ids[2]	, 		pts_ids[3] , 	pts_ids[4] )		 m_this		
+-- 					polyop.setFaceMatID	 m_this.delegate		nvlFace	  matID.vitrage			
 					
 					----- pour plus tard, ... 
 -- 					pts_pourOuvrant[1]		= pt_8
@@ -801,15 +814,15 @@ struct	str_facadeParam_baie (
 					
 					--- creation des points --------------
 					local pts_pos 	= #( pt_1, pt_2, pt_3, pt_4, pt_5, pt_6, pt_7, pt_8 )
-					local pts_ids 	= m_geo.creer.points 	pts_pos		_this
+					local pts_ids 	= m_geo.points 	pts_pos		
 					
 					---- faces ------
-					local nvlFace = m_geo.creer.face 		#(	pts_ids[2], 		pts_ids[6], 		pts_ids[7],   	pts_ids[3]  )			 _this					
-					polyop.setFaceMatID	 _this.delegate		nvlFace	  matID.menuiserie			
-					local nvlFace = m_geo.creer.face 		#(	pts_ids[1], 		pts_ids[2], 		pts_ids[3],   	pts_ids[4]  )			 _this					
-					polyop.setFaceMatID	 _this.delegate		nvlFace	  matID.menuiserie			
-					local nvlFace = m_geo.creer.face 		#(	pts_ids[5], 		pts_ids[1], 		pts_ids[4],   	pts_ids[8]  )			 _this					
-					polyop.setFaceMatID	 _this.delegate		nvlFace	  matID.menuiserie			
+					local nvlFace = m_geo.face 		#(	pts_ids[2], 		pts_ids[6], 		pts_ids[7],   	pts_ids[3]  )			 					
+					polyop.setFaceMatID	 m_this.delegate		nvlFace	  matID.menuiserie			
+					local nvlFace = m_geo.face 		#(	pts_ids[1], 		pts_ids[2], 		pts_ids[3],   	pts_ids[4]  )			 					
+					polyop.setFaceMatID	 m_this.delegate		nvlFace	  matID.menuiserie			
+					local nvlFace = m_geo.face 		#(	pts_ids[5], 		pts_ids[1], 		pts_ids[4],   	pts_ids[8]  )			 					
+					polyop.setFaceMatID	 m_this.delegate		nvlFace	  matID.menuiserie			
 					
 					if menuis_ouvrant_use do (
 						
@@ -833,15 +846,15 @@ struct	str_facadeParam_baie (
 						
 						--- creation des points --------------
 						local pts_pos 	= #( 	pt_1, pt_2, pt_3, pt_4, pt_5, pt_6, pt_7, pt_8 )
-						local pts_ids 	= m_geo.creer.points 	pts_pos		_this
+						local pts_ids 	= m_geo.points 	pts_pos		
 						
 						---- faces ------
-						local nvlFace = 	m_geo.creer.face 		#(	pts_ids[2], 		pts_ids[6], 		pts_ids[7],   	pts_ids[3]  )			 _this						
-						polyop.setFaceMatID	 _this.delegate		nvlFace	  matID.menuiserie			
-						local nvlFace = 	m_geo.creer.face 		#(	pts_ids[1], 		pts_ids[2], 		pts_ids[3],   	pts_ids[4]  )			 _this						
-						polyop.setFaceMatID	 _this.delegate		nvlFace	  matID.menuiserie			
-						local nvlFace = 	m_geo.creer.face 		#(	pts_ids[5], 		pts_ids[1], 		pts_ids[4],   	pts_ids[8]  )			 _this					
-						polyop.setFaceMatID	 _this.delegate		nvlFace	  matID.menuiserie			
+						local nvlFace = 	m_geo.face 		#(	pts_ids[2], 		pts_ids[6], 		pts_ids[7],   	pts_ids[3]  )			 						
+						polyop.setFaceMatID	 m_this.delegate		nvlFace	  matID.menuiserie			
+						local nvlFace = 	m_geo.face 		#(	pts_ids[1], 		pts_ids[2], 		pts_ids[3],   	pts_ids[4]  )			 						
+						polyop.setFaceMatID	 m_this.delegate		nvlFace	  matID.menuiserie			
+						local nvlFace = 	m_geo.face 		#(	pts_ids[5], 		pts_ids[1], 		pts_ids[4],   	pts_ids[8]  )			 					
+						polyop.setFaceMatID	 m_this.delegate		nvlFace	  matID.menuiserie			
 						
 					)
 				)
@@ -871,25 +884,25 @@ struct	str_facadeParam_baie (
 					
 					--- creation des points --------------
 					local pts_pos 	= #( 	pt_1, pt_2, pt_3, pt_4, pt_5, pt_6, pt_7, pt_8 , pt_9, pt_10, pt_11, pt_12 )
-					local pts_ids 	= m_geo.creer.points 	pts_pos		_this
+					local pts_ids 	= m_geo.points 	pts_pos		m_this
 					
 					---- cadre ------
 					
-					local nvlFace = m_geo.creer.face 		#(	pts_ids[1]	, pts_ids[2], pts_ids[3], pts_ids[4], pts_ids[8], pts_ids[7], pts_ids[6], pts_ids[5], pts_ids[8], pts_ids[4] )		 _this				
-					polyop.setFaceMatID	 _this.delegate		nvlFace	  matID.menuiserie					
+					local nvlFace = m_geo.face 		#(	pts_ids[1]	, pts_ids[2], pts_ids[3], pts_ids[4], pts_ids[8], pts_ids[7], pts_ids[6], pts_ids[5], pts_ids[8], pts_ids[4] )		 m_this				
+					polyop.setFaceMatID	 m_this.delegate		nvlFace	  matID.menuiserie					
 					
-					local nvlFace = m_geo.creer.face 		#(	pts_ids[5], 		pts_ids[6], 		pts_ids[10],   	pts_ids[9]  )			 _this			
-					polyop.setFaceMatID	 _this.delegate		nvlFace	  matID.menuiserie			
-					local nvlFace = m_geo.creer.face 		#(	pts_ids[10], 	pts_ids[6], 		pts_ids[7],   	pts_ids[11]  )			 _this			
-					polyop.setFaceMatID	 _this.delegate		nvlFace	  matID.menuiserie			
-					local nvlFace = m_geo.creer.face 		#(	pts_ids[12], 	pts_ids[11], 	pts_ids[7],   	pts_ids[8]  )			 _this			
-					polyop.setFaceMatID	 _this.delegate		nvlFace	  matID.menuiserie			
-					local nvlFace = m_geo.creer.face 		#(	pts_ids[5], 		pts_ids[9], 		pts_ids[12],   	pts_ids[8]  )			 _this			
-					polyop.setFaceMatID	 _this.delegate		nvlFace	  matID.menuiserie			
+					local nvlFace = m_geo.face 		#(	pts_ids[5], 		pts_ids[6], 		pts_ids[10],   	pts_ids[9]  )			 m_this			
+					polyop.setFaceMatID	 m_this.delegate		nvlFace	  matID.menuiserie			
+					local nvlFace = m_geo.face 		#(	pts_ids[10], 	pts_ids[6], 		pts_ids[7],   	pts_ids[11]  )			 m_this			
+					polyop.setFaceMatID	 m_this.delegate		nvlFace	  matID.menuiserie			
+					local nvlFace = m_geo.face 		#(	pts_ids[12], 	pts_ids[11], 	pts_ids[7],   	pts_ids[8]  )			 m_this			
+					polyop.setFaceMatID	 m_this.delegate		nvlFace	  matID.menuiserie			
+					local nvlFace = m_geo.face 		#(	pts_ids[5], 		pts_ids[9], 		pts_ids[12],   	pts_ids[8]  )			 m_this			
+					polyop.setFaceMatID	 m_this.delegate		nvlFace	  matID.menuiserie			
 -- 					
 -- 					----vitrage
-					local nvlFace = m_geo.creer.face 		#(	pts_ids[9], 		pts_ids[10], 		pts_ids[11],   	pts_ids[12]  )			 _this			
-					polyop.setFaceMatID	 _this.delegate		nvlFace	  matID.vitrage			
+					local nvlFace = m_geo.face 		#(	pts_ids[9], 		pts_ids[10], 		pts_ids[11],   	pts_ids[12]  )			 m_this			
+					polyop.setFaceMatID	 m_this.delegate		nvlFace	  matID.vitrage			
 					
 				)
 				
@@ -909,8 +922,9 @@ struct	str_facadeParam_baie (
 		------ fonctions -------
 			fn actualiser 			_compo		_construc	= (
 				m_construction 		= _construc
-				m_geo					=	m_construction.geo_ptr
+				m_geo					=	m_construction.m_geo
 				m_compo 				= _compo
+				m_this					=	m_construction.m_this
 			),
 			
 			fn initialiser 			_compo		_construc	= (
@@ -942,6 +956,7 @@ struct	str_facadeParam_balcon (
 
 		m_construction,
 		m_geo,
+		m_this,
 		matID = str_prefs_matID (),
 		
 	public
@@ -988,8 +1003,9 @@ struct	str_facadeParam_balcon (
 	------ fonctions -------
 		fn actualiser 			_compo		_construc	= (
 			m_construction 		= _construc
-			m_geo					=	m_construction.geo_ptr
+			m_geo					=	m_construction.m_geo
 			m_compo 				= _compo
+			m_this					=	m_construction.m_this
 		),
 		
 		fn initialiser 			_compo		_construc	= (
@@ -1009,13 +1025,13 @@ struct	str_facadeParam_balcon (
 		
 		
 	------ CONSTRUIRE -------
-		fn construire	 pts_accroches		_normDir				_this 		= (
+		fn construire	 pts_accroches		_normDir				 		= (
 			
 				--- Result -------------
 				local pt_result_1, pt_result_2, pt_result_3
 				
 				--- Vecteurs ------------
-				local vec_ep_dalle 	= [0,0,1] 			* 	_this.ep_dalle			
+				local vec_ep_dalle 	= [0,0,1] 			* 	m_this.ep_dalle			
 				local vec_longueur 	= _normDir 		* 	m_compo.longueur
 				local norm_balcon	= _normDir * rotateZ ( matrix3 1 ) -90
 				local vec_largeur		= norm_balcon 	*	 largeur				
@@ -1025,9 +1041,9 @@ struct	str_facadeParam_balcon (
 				local id_ptAccroche_2 	= pts_accroches[2]
 				local id_ptAccroche_3 	= pts_accroches[3]
 				
-				local ptAccroche_1		=	polyop.getVert 	_this.delegate		id_ptAccroche_1	
-				local ptAccroche_2		=	polyop.getVert 	_this.delegate		id_ptAccroche_2	
-				local ptAccroche_3		=	polyop.getVert 	_this.delegate		id_ptAccroche_3	
+				local ptAccroche_1		=	polyop.getVert 	m_this.delegate		id_ptAccroche_1	
+				local ptAccroche_2		=	polyop.getVert 	m_this.delegate		id_ptAccroche_2	
+				local ptAccroche_3		=	polyop.getVert 	m_this.delegate		id_ptAccroche_3	
 				
 				
 				-------	Placement des points 	--------
@@ -1043,19 +1059,19 @@ struct	str_facadeParam_balcon (
 				
 				--- creation des points --------------
 				local pts_pos 	= #( 	pt_1, pt_2, pt_3, pt_4, pt_5, pt_6, pt_7, pt_8 )
-				local pts_ids 	= m_geo.creer.points 	pts_pos		_this
+				local pts_ids 	= m_geo.points 	pts_pos		
 				
 				-------	Creation des faces 	--------
-				local nvlFace = m_geo.creer.face 		#(	pts_ids[1], 		pts_ids[5], 		pts_ids[8], 		pts_ids[4] )		 _this			
-				polyop.setFaceMatID	 _this.delegate		nvlFace	   ( matID.mur + 1 )			
-				local nvlFace = m_geo.creer.face 		#(	pts_ids[5], 		pts_ids[6], 		pts_ids[7] , 	pts_ids[8] )		 _this				
-				polyop.setFaceMatID	 _this.delegate		nvlFace	   ( matID.mur + 1 )					
-				local nvlFace = m_geo.creer.face 		#(	pts_ids[6], 		pts_ids[2], 		pts_ids[3] , 	pts_ids[7] )		 _this		
-				polyop.setFaceMatID	 _this.delegate		nvlFace	   ( matID.mur + 1 )			
-				local nvlFace = m_geo.creer.face 		#(	pts_ids[1], 		pts_ids[2], 		pts_ids[6], 		pts_ids[5] )		 _this		
-				polyop.setFaceMatID	 _this.delegate		nvlFace	   ( matID.mur + 1 )			
-				local nvlFace = m_geo.creer.face 		#(	pts_ids[8], 		pts_ids[7], 		pts_ids[3], 		pts_ids[4] )		 _this				
-				polyop.setFaceMatID	 _this.delegate		nvlFace	   ( matID.mur + 1 )
+				local nvlFace = m_geo.face 		#(	pts_ids[1], 		pts_ids[5], 		pts_ids[8], 		pts_ids[4] )		 			
+				polyop.setFaceMatID	 m_this.delegate		nvlFace	   ( matID.mur + 1 )			
+				local nvlFace = m_geo.face 		#(	pts_ids[5], 		pts_ids[6], 		pts_ids[7] , 	pts_ids[8] )		 				
+				polyop.setFaceMatID	 m_this.delegate		nvlFace	   ( matID.mur + 1 )					
+				local nvlFace = m_geo.face 		#(	pts_ids[6], 		pts_ids[2], 		pts_ids[3] , 	pts_ids[7] )		 		
+				polyop.setFaceMatID	 m_this.delegate		nvlFace	   ( matID.mur + 1 )			
+				local nvlFace = m_geo.face 		#(	pts_ids[1], 		pts_ids[2], 		pts_ids[6], 		pts_ids[5] )		 		
+				polyop.setFaceMatID	 m_this.delegate		nvlFace	   ( matID.mur + 1 )			
+				local nvlFace = m_geo.face 		#(	pts_ids[8], 		pts_ids[7], 		pts_ids[3], 		pts_ids[4] )		 				
+				polyop.setFaceMatID	 m_this.delegate		nvlFace	   ( matID.mur + 1 )
 				
 				
 				
@@ -1074,7 +1090,7 @@ struct	str_facadeParam_balconFin (
 	private
 		----- membres communs --------------
 		m_compo,								---- le composant parant	
-
+		m_this,
 		m_construction,
 		m_geo,
 		matID = str_prefs_matID (),
@@ -1101,8 +1117,9 @@ struct	str_facadeParam_balconFin (
 	------ fonctions -------
 		fn actualiser 			_compo		_construc	= (
 			m_construction 		= _construc
-			m_geo					=	m_construction.geo_ptr
+			m_geo					=	m_construction.m_geo
 			m_compo 				= _compo
+			m_this					=	m_construction.m_this
 		),
 		
 		fn initialiser 			_compo		_construc	= (
@@ -1122,12 +1139,12 @@ struct	str_facadeParam_balconFin (
 		
 		
 	------ CONSTRUIRE -------
-		fn construire	 _id_pt_bas		_id_pt_ht		_normDir		_this 		= (
+		fn construire	 _id_pt_bas		_id_pt_ht		_normDir		 		= (
 	-- 		format "CONSTRUIRE : lg = %\n" m_compo.longueur
-			local pt1 =  polyop.getVert 	_this.delegate		_id_pt_bas	
+			local pt1 =  polyop.getVert 	m_this.delegate		_id_pt_bas	
 			local pt2 = pt1 + _normDir * m_compo.longueur
 			
-			m_construction.creer_mur 	_id_pt_bas		_id_pt_ht	pt2 	_this		matID:matID.mur
+			m_construction.creer_mur 	_id_pt_bas		_id_pt_ht	pt2 			matID:matID.mur
 			
 		),
 		
@@ -1145,6 +1162,7 @@ struct	str_facadeParam_modele (
 
 		m_construction,
 		m_geo,
+		m_this,
 		matID = str_prefs_matID (),
 		
 	public
@@ -1215,8 +1233,9 @@ struct	str_facadeParam_modele (
 	public
 		fn actualiser 			_compo		_construc	= (
 			m_construction 		= _construc
-			m_geo					=	m_construction.geo_ptr
+			m_geo					=	m_construction.m_geo
 			m_compo 				= _compo
+			m_this					=	m_construction.m_this
 		),
 		
 		fn initialiser 			_compo		_construc	= (
@@ -1236,12 +1255,12 @@ struct	str_facadeParam_modele (
 		
 		
 	------ CONSTRUIRE -------
-		fn construire	 _id_pt_bas		_id_pt_ht		_normDir		_this 		= (
+		fn construire	 _id_pt_bas		_id_pt_ht		_normDir		 		= (
 	-- 		format "CONSTRUIRE : lg = %\n" m_compo.longueur
-			local pt1 =  polyop.getVert 	_this.delegate		_id_pt_bas	
+			local pt1 =  polyop.getVert 	m_this.delegate		_id_pt_bas	
 			local pt2 = pt1 + _normDir * m_compo.longueur
 			
-			m_construction.creer_mur 	_id_pt_bas		_id_pt_ht	pt2 	_this		matID:matID.mur
+			m_construction.creer_mur 	_id_pt_bas		_id_pt_ht	pt2 			matID:matID.mur
 			
 		),
 		

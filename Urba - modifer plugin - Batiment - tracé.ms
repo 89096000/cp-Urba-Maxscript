@@ -1,24 +1,32 @@
+
+
+
+
 ----------- Tracé du batiment et autres manipulations----------------
 struct str_trace (
 	
-		geo_ptr,
+	---- Pointeurs divers --------------------
+	public
+		m_geo,
+		m_this,			---- le plugin: 'this' -----
 		
-		regles_ssTrace 		= #(),
-		sousTraces 			= #(),
-		rectangles_traces 	= #(),
+	private
+		m_regles_ssTrace 		= #(),
+		m_sousTraces 			= #(),
+		m_rectangles_traces 	= #(),
 		
-		datasMgr = str_datasMgr 	m_prt:this,
+		m_datasMgr = str_datasMgr 	m_prt:this,
 		
 		-----------------  Opérations diverses ----------------------
-		fn surface 							_trace 	_this =(
+		fn surface 							_trace 	 	=(
 			--- on creer une face sur le tracé ---------
-			local faceTemp = geo_ptr.creerFace 	_trace  _this	--nd:nvNode
+			local faceTemp = m_geo.pointsEtFaces 	_trace
 			
 			--- pour utiliser cette fonction : ------
-			local result = polyop.getFaceArea  delegate faceTemp
+			local result = polyop.getFaceArea  m_this.delegate faceTemp
 			
 			--- on supprime la face, verts et edges créés--------
-			polyop.deleteFaces 	delegate faceTemp
+			polyop.deleteFaces 	m_this.delegate faceTemp
 			
 			result
 		),
@@ -119,9 +127,9 @@ struct str_trace (
 			#([xMin, yMin, zMin]*  _mtrxAxe, [xMax, yMax, zMax]*  _mtrxAxe)
 			
 		),
-		fn vec_axeP			_this		_vec 				=(
+		fn vec_axeP					_vec 				=(
 			
-			local mtrx_Direction = _this.axeP_mtrx.rotationpart as matrix3
+			local mtrx_Direction = m_this.axeP_mtrx.rotationpart as matrix3
 			local vec_direction = [0,0,1] * mtrx_Direction
 			
 			local vec1_dir = normalize _vec	
@@ -204,27 +212,21 @@ struct str_trace (
 		),
 		
 		
-		
-		----- MURS -----------------
-		fn est_pignon 		_id	_this	= (
--- 			findItem _this.idtrace_pignons 	_id 	!= 0
-			
-			local j = boucler  _this.trace_courant  (_id+1)
--- 			if j > _this.trace_courant.count do j = 1
-			
-			orientation = vec_axeP	_this		(_this.trace_courant[j]-_this.trace_courant[_id])
+		fn estPignon 		_id		=(
+			local j = boucler  m_this.trace_courant  (_id+1)
+			orientation = vec_axeP			(m_this.trace_courant[j]-m_this.trace_courant[_id])
 			if orientation == #perpendiculaire then true else false
-			
 		),
 		
-		fn actualiser_axeP	  _this	=(
+		
+		fn actualiser_axeP	  	=(
 			
-			local mtrxTmp 			= mtrx_axeP  _this.trace_original 	
-			rotateZ	mtrxTmp		_this.axeP_orientation
-			_this.axeP_mtrx 			= mtrxTmp		
-			_this.axeP_BB				=	BB_axeP		_this.trace_courant 		_this.axeP_mtrx
+			local mtrxTmp 			= mtrx_axeP  m_this.trace_original 	
+			rotateZ	mtrxTmp		m_this.axeP_orientation
+			m_this.axeP_mtrx 			= mtrxTmp		
+			m_this.axeP_BB				=	BB_axeP		m_this.trace_courant 		m_this.axeP_mtrx
 			
--- 			actualiser_pignonsEtGouttereaux _this
+-- 			actualiser_pignonsEtGouttereaux m_this
 			
 		),
 		
@@ -232,91 +234,91 @@ struct str_trace (
 		
 		
 		-----------------  Optimisation ----------------------
-		fn orthonormer 	_this		=(
+		fn orthonormer 			=(
 			
-			local mtrx_AP = _this.axeP_mtrx
+			local mtrx_AP = m_this.axeP_mtrx
 			
-			for i = 1 to _this.trace_courant.count do (
+			for i = 1 to m_this.trace_courant.count do (
 				
 				local j = i + 1
-				if j > _this.trace_courant.count do j = 1
-				local pt = _this.trace_courant[i]	* inverse  mtrx_AP 
-				local pt_suivant = _this.trace_courant[j] *  inverse mtrx_AP 
+				if j > m_this.trace_courant.count do j = 1
+				local pt = m_this.trace_courant[i]	* inverse  mtrx_AP 
+				local pt_suivant = m_this.trace_courant[j] *  inverse mtrx_AP 
 				local vec_moyenne 
 				
-				local estPignon = est_pignon i _this
-				if not estPignon then (
+				local est_pignon = estPignon i
+				if not est_pignon then (
 					local moyenneX = ( pt_suivant.x - pt.x ) /2					
-					vec_moyenne = [moyenneX,0,0] * _this.seuil_ortho / 100
+					vec_moyenne = [moyenneX,0,0] * m_this.seuil_ortho / 100
 				) else  (
 					local moyenneZ = ( pt_suivant.z - pt.z ) /2					
-					 vec_moyenne = [0,0,moyenneZ] * _this.seuil_ortho / 100
+					 vec_moyenne = [0,0,moyenneZ] * m_this.seuil_ortho / 100
 				) 
 				
-				pt 			= _this.trace_courant[i]	* inverse  mtrx_AP  + vec_moyenne 
-				pt_suivant 	= _this.trace_courant[j]	* inverse  mtrx_AP  - vec_moyenne 
+				pt 			= m_this.trace_courant[i]	* inverse  mtrx_AP  + vec_moyenne 
+				pt_suivant 	= m_this.trace_courant[j]	* inverse  mtrx_AP  - vec_moyenne 
 				
-				_this.trace_courant[i] = pt *   mtrx_AP 
-				_this.trace_courant[j] = pt_suivant  *   mtrx_AP 
+				m_this.trace_courant[i] = pt *   mtrx_AP 
+				m_this.trace_courant[j] = pt_suivant  *   mtrx_AP 
 			)
 		/* 	--- les Gouttereaux  --
-			for i = 1 to _this.trace_courant.count do (
+			for i = 1 to m_this.trace_courant.count do (
 				local j = i + 1
-				if j > _this.trace_courant.count do j = 1
-				local pt = _this.trace_courant[i]	* inverse  mtrx_AP 
-				local pt_suivant = _this.trace_courant[j] *  inverse mtrx_AP 
+				if j > m_this.trace_courant.count do j = 1
+				local pt = m_this.trace_courant[i]	* inverse  mtrx_AP 
+				local pt_suivant = m_this.trace_courant[j] *  inverse mtrx_AP 
 				
-				local estPignon = findItem _this.idtrace_pignons i != 0 
+				local estPignon = findItem m_this.idtrace_pignons i != 0 
 				if  estPignon then (
 					
 					local moyenneZ = ( pt_suivant.z - pt.z ) /2					
-					local vec_moyenne = [0,0,moyenneZ] * _this.seuil_ortho / 100
-					pt 			= _this.trace_courant[i]	* inverse  mtrx_AP  + vec_moyenne 
-					pt_suivant 	= _this.trace_courant[j]	* inverse  mtrx_AP  - vec_moyenne 
+					local vec_moyenne = [0,0,moyenneZ] * m_this.seuil_ortho / 100
+					pt 			= m_this.trace_courant[i]	* inverse  mtrx_AP  + vec_moyenne 
+					pt_suivant 	= m_this.trace_courant[j]	* inverse  mtrx_AP  - vec_moyenne 
 					
-					_this.trace_courant[i] = pt *   mtrx_AP 
-					_this.trace_courant[j] = pt_suivant  *   mtrx_AP 
+					m_this.trace_courant[i] = pt *   mtrx_AP 
+					m_this.trace_courant[j] = pt_suivant  *   mtrx_AP 
 				) 
 			) */
 			
 	-- 			result
 		),
-		fn souder 			_this		=(
+		fn souder 					=(
 			
 			local i = 1
-			while i <=_this.trace_courant.count do (
+			while i <=m_this.trace_courant.count do (
 				local j= i+1
-				if j > _this.trace_courant.count  do j =1
-				local pt 			= _this.trace_courant[i]
-				local ptSuivant 	= _this.trace_courant[j]
-				if distance pt ptSuivant <= _this.seuil_souder do (
-					deleteitem _this.trace_courant j
-					_this.trace_courant[i] = ( pt + ptSuivant ) / 2
+				if j > m_this.trace_courant.count  do j =1
+				local pt 			= m_this.trace_courant[i]
+				local ptSuivant 	= m_this.trace_courant[j]
+				if distance pt ptSuivant <= m_this.seuil_souder do (
+					deleteitem m_this.trace_courant j
+					m_this.trace_courant[i] = ( pt + ptSuivant ) / 2
 					i = 1
 				)
 				i+=i
 			)
 			
 		),
-		fn optimiser 		_this		=(
+		fn optimiser 				=(
 			
 			local i = 1
-			while i <= _this.trace_courant.count do (
+			while i <= m_this.trace_courant.count do (
 				
 				local h = i - 1
-				if h < 1  do h = _this.trace_courant.count
+				if h < 1  do h = m_this.trace_courant.count
 				local j= i+1
-				if j > _this.trace_courant.count  do j =1
-				local ptDAvant 	= _this.trace_courant[h]
-				local pt 			= _this.trace_courant[i]
-				local ptSuivant 	= _this.trace_courant[j]
+				if j > m_this.trace_courant.count  do j =1
+				local ptDAvant 	= m_this.trace_courant[h]
+				local pt 			= m_this.trace_courant[i]
+				local ptSuivant 	= m_this.trace_courant[j]
 				
 				local vec1 = normalize (ptDAvant - pt)
 				local vec2 = normalize (ptSuivant - pt)
 				
 				local anglePt = acos(dot vec1 vec2)			
-				if 	anglePt >= 180 - _this.seuil_optimiser  then (
-					deleteitem _this.trace_courant i
+				if 	anglePt >= 180 - m_this.seuil_optimiser  then (
+					deleteitem m_this.trace_courant i
 					i = 0
 				)
 				dot
@@ -325,28 +327,28 @@ struct str_trace (
 
 			result
 		),
-		fn chercher_alignements		_idTest		_this		=(
+		fn chercher_alignements		_idTest				=(
 			
-			local seuil 			= _this.seuil_aligner	
-			local mtrx_AP 	= _this.axeP_mtrx
-			local pt_test					= _this.trace_courant[_idTest]		* inverse  mtrx_AP
+			local seuil 			= m_this.seuil_aligner	
+			local mtrx_AP 	= m_this.axeP_mtrx
+			local pt_test					= m_this.trace_courant[_idTest]		* inverse  mtrx_AP
 			local result =#()
 		
-			for i = 1  to _this.trace_courant.count do (
+			for i = 1  to m_this.trace_courant.count do (
 				
-				local j 				= boucler 	_this.trace_courant	( i + 1)
-				local pt 			= _this.trace_courant[i]	* inverse  mtrx_AP
-				local pt_suivant 	= _this.trace_courant[j]	* inverse  mtrx_AP
+				local j 				= boucler 	m_this.trace_courant	( i + 1)
+				local pt 			= m_this.trace_courant[i]	* inverse  mtrx_AP
+				local pt_suivant 	= m_this.trace_courant[j]	* inverse  mtrx_AP
 				
 				
-				if est_pignon  	_idTest	_this	 and est_pignon  i 	_this 					do 	(
+				if estPignon  	_idTest		 and estPignon  i 	 					do 	(
 					if abs ( pt_test.z - pt.z ) < seuil do 
 						appendIfUnique result i
 					if abs ( pt_test.z - pt_suivant.z ) < seuil do 
 						appendIfUnique result i
 				)
 				
-				if not est_pignon  	_idTest	_this	 and not est_pignon i _this 	do (
+				if not estPignon  	_idTest		 and not estPignon i  	do (
 					if abs ( pt_test.x - pt.x ) < seuil do
 						appendIfUnique result i
 					if abs ( pt_test.x - pt_suivant.x ) < seuil do 
@@ -359,28 +361,28 @@ struct str_trace (
 
 			result
 		),
-		fn aligner				_this		=(	
+		fn aligner						=(	
 			
-			local mtrx_AP 	= _this.axeP_mtrx
+			local mtrx_AP 	= m_this.axeP_mtrx
 			
-			for i = 1 to   _this.trace_courant.count  do (
+			for i = 1 to   m_this.trace_courant.count  do (
 				
-				local aligns = 	chercher_alignements		i		_this	
+				local aligns = 	chercher_alignements		i			
 				
 				local pt_moyenne = [0,0,0]
 				for id_align in aligns do 
-					pt_moyenne += _this.trace_courant[id_align]	* inverse  mtrx_AP
+					pt_moyenne += m_this.trace_courant[id_align]	* inverse  mtrx_AP
 				pt_moyenne /=  aligns.count
 				
 				for id_align in aligns  do (
 					
-					local j 						= boucler _this.trace_courant (  id_align + 1 )
-					local pt 					= _this.trace_courant[id_align]	* inverse  mtrx_AP  
-					local pt_suivant 			= _this.trace_courant[j]	* inverse  mtrx_AP  
+					local j 						= boucler m_this.trace_courant (  id_align + 1 )
+					local pt 					= m_this.trace_courant[id_align]	* inverse  mtrx_AP  
+					local pt_suivant 			= m_this.trace_courant[j]	* inverse  mtrx_AP  
 					local vec_moyenne1 	= pt_moyenne	 - pt
 					local vec_moyenne2 	= pt_moyenne	 - pt_suivant
 					local vec_align1, vec_align2
-					if est_pignon  	id_align		_this then (
+					if estPignon  	id_align		 then (
 						vec_align1 			= [0,0,vec_moyenne1.z] 
 						vec_align2 			= [0,0,vec_moyenne2.z] 						
 					) else (
@@ -388,16 +390,16 @@ struct str_trace (
 						vec_align2 			= [vec_moyenne2.x,0,0] 
 					)
 					
-					pt 							= _this.trace_courant[id_align]	* inverse  mtrx_AP  	+ vec_align1 
-					pt_suivant 					= _this.trace_courant[j]			* inverse  mtrx_AP  	+ vec_align2
+					pt 							= m_this.trace_courant[id_align]	* inverse  mtrx_AP  	+ vec_align1 
+					pt_suivant 					= m_this.trace_courant[j]			* inverse  mtrx_AP  	+ vec_align2
 					
-					_this.trace_courant[id_align] 	= pt *   mtrx_AP 
-					_this.trace_courant[j] 			= pt_suivant *   mtrx_AP 
+					m_this.trace_courant[id_align] 	= pt *   mtrx_AP 
+					m_this.trace_courant[j] 			= pt_suivant *   mtrx_AP 
 					
 				)
 			)
 		),
-		fn intersection 	_pt_orig 	_pt_2 		_pt_seg_1 	_pt_seg_2  	_this	 =(
+		fn intersection 	_pt_orig 	_pt_2 		_pt_seg_1 	_pt_seg_2  		 =(
 			local pt_result
 			local seuil = 1
 			
@@ -500,12 +502,12 @@ struct str_trace (
 			)
 			pt_result
 		),
-		fn projeter_trace		_this 		=(
+		fn projeter_trace		 		=(
 			
-			local mtrx_AP 	= _this.axeP_mtrx
+			local mtrx_AP 	= m_this.axeP_mtrx
 			local seuil = 5
 			local result
-			local trace 		= _this.trace_courant
+			local trace 		= m_this.trace_courant
 			local trace_temp =  for item in trace collect item
 			
 			local est_subdivise_total = false
@@ -536,7 +538,7 @@ struct str_trace (
 						local pt_seg_2	= trace_temp[ id_seg_2 ] 	* 	inverse  	mtrx_AP 
 						
 						--- la projection 1 -------
-						local pt_proj = intersection 	pt_orig		pt_suiv		pt_seg_1	 	pt_seg_2	_this	
+						local pt_proj = intersection 	pt_orig		pt_suiv		pt_seg_1	 	pt_seg_2		
 						
 						if pt_proj != undefined  do (	
 							
@@ -550,7 +552,7 @@ struct str_trace (
 						)
 						
 						--- la projection 2 -------
-						local pt_proj = intersection 	pt_orig		pt_prec		pt_seg_1	 	pt_seg_2	_this
+						local pt_proj = intersection 	pt_orig		pt_prec		pt_seg_1	 	pt_seg_2	
 						
 						if pt_proj != undefined  do (	
 							
@@ -574,20 +576,20 @@ struct str_trace (
 				
 			) -- fin while not est_subdivise_total
 			
-			_this.trace_courant = trace_temp
+			m_this.trace_courant = trace_temp
 			
 		),
-		fn chercher_pt_a90degGauche	_id_pt  	vec_pt		_this =(
+		fn chercher_pt_a90degGauche	_id_pt  	vec_pt		 =(
 			
 			local seuil = 1
 			
 -- 			format "chercher_pt_a90degGauche: %\n" _id_pt
 			local vertexSurLigne = #()
-			local mtrx_AP 		= _this.axeP_mtrx
+			local mtrx_AP 		= m_this.axeP_mtrx
 			
--- 			local id_pt_preced 	= boucler 	_this.trace_courant	(_id_pt - 1)
-			local pt 				= _this.trace_courant[ _id_pt ] 			* 	inverse  	mtrx_AP	
--- 			local pt_preced 		= _this.trace_courant[ id_pt_preced ] * 	inverse  	mtrx_AP	
+-- 			local id_pt_preced 	= boucler 	m_this.trace_courant	(_id_pt - 1)
+			local pt 				= m_this.trace_courant[ _id_pt ] 			* 	inverse  	mtrx_AP	
+-- 			local pt_preced 		= m_this.trace_courant[ id_pt_preced ] * 	inverse  	mtrx_AP	
 			
 -- 			local vec_pt 			= pt - pt_preced
 			local norm_pt 		= normalize vec_pt
@@ -615,8 +617,8 @@ struct str_trace (
 			
 			
 			if not verticale then (
-				for i=1 to _this.trace_courant.count do (
-					local pt_test = _this.trace_courant[i] * 	inverse  	mtrx_AP	
+				for i=1 to m_this.trace_courant.count do (
+					local pt_test = m_this.trace_courant[i] * 	inverse  	mtrx_AP	
 					-- y = a*x + b
 					if  abs ( pt_test.z - ( pt_test.x * a + b ) ) < seuil do (
 						
@@ -629,8 +631,8 @@ struct str_trace (
 					)
 				)
 			) else (
-				for i=1 to _this.trace_courant.count do (
-					local pt_test = _this.trace_courant[i] * 	inverse  	mtrx_AP	
+				for i=1 to m_this.trace_courant.count do (
+					local pt_test = m_this.trace_courant[i] * 	inverse  	mtrx_AP	
 					-- y = a*x + b
 					if  abs ( pt_test.x - pt.x ) < seuil  do (
 						
@@ -649,7 +651,7 @@ struct str_trace (
 			local result 
 			local dist_min = 0
 			for id_pt_test in vertexSurLigne do (
-				local pt_test = _this.trace_courant[ id_pt_test ] 			* 	inverse  	mtrx_AP	
+				local pt_test = m_this.trace_courant[ id_pt_test ] 			* 	inverse  	mtrx_AP	
 				local dist_test = distance pt pt_test
 				if  dist_test < dist_min or dist_min == 0 do (
 					result = id_pt_test
@@ -710,7 +712,7 @@ struct str_trace (
 		 */
 		
 
-		fn unir 	_listeTraces =(
+		fn unir 	_listeTraces 	=(
 			
 -- 			format "unir 	_listeTraces : %\n" _listeTraces
 			local traces = #() --for trace in _listeTraces collect trace
@@ -824,22 +826,22 @@ struct str_trace (
 			
 			
 		),
-		fn subdiviser		_this 		=(
+		fn subdiviser		 		=(
 			
 			--- on  les points projetés au tracé --------
-			projeter_trace 		_this
+			projeter_trace 		()
 			
 			
 			
 			local result = #()
 			local result_reste =#()
 			
-			rectangles_traces 		= #()
+			m_rectangles_traces 		= #()
 			
 			
 			local seuil 					= 1
-			local mtrx_AP 			= _this.axeP_mtrx
-			local trace 				= _this.trace_courant
+			local mtrx_AP 			= m_this.axeP_mtrx
+			local trace 				= m_this.trace_courant
 			
 			
 			for i = 1 to  trace.count 	do (
@@ -851,19 +853,19 @@ struct str_trace (
 				local vec_pt 			= pt_orig - pt_preced		
 				local id_pt_1, id_pt_2, id_pt_3, id_pt_4
 				
-				id_pt_1	= chercher_pt_a90degGauche	i 	vec_pt	_this 
+				id_pt_1	= chercher_pt_a90degGauche	i 	vec_pt	 
 				
 				if id_pt_1 != undefined then (
 					local norm 		= vec_pt * (rotateY	(matrix3 1)	90 )
-					id_pt_2				= chercher_pt_a90degGauche	id_pt_1 	norm		_this 
+					id_pt_2				= chercher_pt_a90degGauche	id_pt_1 	norm		 
 				)  				
 				if id_pt_2 != undefined then (
 					local norm	 	= vec_pt * (rotateY	(matrix3 1)	180 )
-					id_pt_3 				= chercher_pt_a90degGauche	id_pt_2 	norm	_this 
+					id_pt_3 				= chercher_pt_a90degGauche	id_pt_2 	norm	 
 				)  				
 				if id_pt_3 != undefined then (
 					local norm	 	= vec_pt * (rotateY	(matrix3 1)	270 )
-					id_pt_4 				= chercher_pt_a90degGauche	id_pt_3 	norm	_this 
+					id_pt_4 				= chercher_pt_a90degGauche	id_pt_3 	norm	 
 				)  
 				
 				---- si on a les quatre points -------
@@ -884,18 +886,18 @@ struct str_trace (
 					
 					local rect_ordo = ordonner_Points 	rect
 -- 					format "	->	subdiviser, rect_ordo: %\n" rect_ordo
-					append rectangles_traces 		rect_ordo
--- 					format "->	subdiviser, rectangles_traces: %\n" ( rectangles_traces )
-					virerDoublonsDansTableau 	rectangles_traces
+					append m_rectangles_traces 		rect_ordo
+-- 					format "->	subdiviser, m_rectangles_traces: %\n" ( m_rectangles_traces )
+					virerDoublonsDansTableau 	m_rectangles_traces
 					
--- 				format "->	subdiviser, rectangles_traces: %\n" ( rectangles_traces )
+-- 				format "->	subdiviser, m_rectangles_traces: %\n" ( m_rectangles_traces )
 				)
 			) -- fin while i  --
 			
--- 			format "	->	subdiviser, rectangles_traces: %\n" ( rectangles_traces )
+-- 			format "	->	subdiviser, m_rectangles_traces: %\n" ( m_rectangles_traces )
 			
 		),
-		fn decouper 		_this 		=(
+		fn decouper 		 		=(
 			
 			
 			--  points concaves -----------------
@@ -907,13 +909,13 @@ struct str_trace (
 			
 			
 			local seuil 					= 1
-			local mtrx_AP 			= _this.axeP_mtrx
-			local trace 				= _this.trace_courant
+			local mtrx_AP 			= m_this.axeP_mtrx
+			local trace 				= m_this.trace_courant
 			local trace_restant 		= for i = 1 to trace.count collect i
 			
 -- 			--- creer la face tracé pour tester intersection ------------
 			
-			for sstrace in   rectangles_traces 	do (
+			for sstrace in   m_rectangles_traces 	do (
 				
 				local estValide = true
 				
@@ -925,13 +927,13 @@ struct str_trace (
 				local surf = ( distance pt_rect_2 	pt_rect_1 ) * ( distance pt_rect_1 pt_rect_4 )  / 10000
 				
 				
-				if _this.sousTraces_surf_min_use do
-					if surf < _this.sousTraces_surf_min do estValide = false
-				if _this.sousTraces_surf_max_use do
-					if surf > _this.sousTraces_surf_max do estValide = false
+				if m_this.sousTraces_surf_min_use do
+					if surf < m_this.sousTraces_surf_min do estValide = false
+				if m_this.sousTraces_surf_max_use do
+					if surf > m_this.sousTraces_surf_max do estValide = false
 									
 				if estValide then (
-					local nvTrace = str_ssTrace 		trace:sstrace		etages:_this.sousTraces_etages
+					local nvTrace = str_ssTrace 		trace:sstrace		etages:m_this.sousTraces_etages
 					appendIfUnique result  nvTrace
 					
 				) else (
@@ -950,16 +952,16 @@ struct str_trace (
 -- 			format "découpage, result_reste: %\n" ( result_reste )
 			if result_reste.count >0 do (
 				for traceResultRest in result_reste do (
-					local nvTrace = str_ssTrace 	trace:traceResultRest	etages:_this.niveaux_nbre
+					local nvTrace = str_ssTrace 	trace:traceResultRest	etages:m_this.niveaux_nbre
 					append  result  nvTrace
 				)
 			)
 			
 -- 			virerDoublonsDansTableau 	result
--- 			format "découpage, sousTraces: %\n" ( result )			
--- 			format "			-> rectangles_traces: %\n" ( rectangles_traces )
+-- 			format "découpage, m_sousTraces: %\n" ( result )			
+-- 			format "			-> m_rectangles_traces: %\n" ( m_rectangles_traces )
 			
-			sousTraces = result
+			m_sousTraces = result
 			
 		
 			
@@ -970,53 +972,53 @@ struct str_trace (
 		
 		/* 
 		---- sous tracés ------------
-		fn params_toStructs 	_this	=		(		
+		fn params_toStructs 	m_this	=		(		
 			------ Modeles -------
-			regles_ssTrace				= #()
-			for regle_ssTrace in _this.regles_ssTrace 	do (
+			m_regles_ssTrace				= #()
+			for regle_ssTrace in m_this.m_regles_ssTrace 	do (
 				local nvl_regleSsTrace = str_regle_ssTrace ()
-				datasMgr.set_datas_string		regle_ssTrace		nvl_regleSsTrace		_this
-				append 	regles_ssTrace		nvl_regleSsTrace
+				m_datasMgr.set_datas_string		regle_ssTrace		nvl_regleSsTrace		m_this
+				append 	m_regles_ssTrace		nvl_regleSsTrace
 			)
 			
-			sousTraces		= #()		
--- 			set_datas_string 		_datas_string 		_element 	_this	
-			for sousTrace_string in _this.sousTraces 	do (
-				local ssTrace =	datasMgr.get_string_to_array		sousTrace_string	
-				append 	sousTraces		ssTrace
+			m_sousTraces		= #()		
+-- 			set_datas_string 		_datas_string 		_element 	m_this	
+			for sousTrace_string in m_this.m_sousTraces 	do (
+				local ssTrace =	m_datasMgr.get_string_to_array		sousTrace_string	
+				append 	m_sousTraces		ssTrace
 			)
 			
 			
 			
 			
 		),
-		fn structs_toParam 	_this	=		(			
+		fn structs_toParam 	m_this	=		(			
 			
-			_this.regles_ssTrace	= #()			
-			for regle_ssTrace in regles_ssTrace 	do (
-				local regle_string = 	datasMgr.get_datas_string		regle_ssTrace	
-				append 	_this.regles_ssTrace		regle_string
+			m_this.m_regles_ssTrace	= #()			
+			for regle_ssTrace in m_regles_ssTrace 	do (
+				local regle_string = 	m_datasMgr.get_datas_string		regle_ssTrace	
+				append 	m_this.m_regles_ssTrace		regle_string
 			)
 			
-			_this.sousTraces		= #()		
-			for sousTrace in sousTraces 	do (
-				local ssTrace_string = 	datasMgr.get_array_to_string		sousTrace	
-				append 	_this.sousTraces		ssTrace_string
+			m_this.m_sousTraces		= #()		
+			for sousTrace in m_sousTraces 	do (
+				local ssTrace_string = 	m_datasMgr.get_array_to_string		sousTrace	
+				append 	m_this.m_sousTraces		ssTrace_string
 			)
 			
 			
 		),
 		
-		fn ajouter_sousTrace	_this =(	
+		fn ajouter_sousTrace	m_this =(	
 			local nvl_regleSsTrace = str_regle_ssTrace ()
-			append 	regles_ssTrace		nvl_regleSsTrace
-			structs_toParam _this
+			append 	m_regles_ssTrace		nvl_regleSsTrace
+			structs_toParam m_this
 		),
 		
-		fn supprimer_sousTrace	_id	_this =(	
-			deleteItem regles_ssTrace 	_id
-			deleteItem _this.regles_ssTrace 	_id
--- 			structs_toParam 	_this
+		fn supprimer_sousTrace	_id	m_this =(	
+			deleteItem m_regles_ssTrace 	_id
+			deleteItem m_this.m_regles_ssTrace 	_id
+-- 			structs_toParam 	m_this
 		),
 		
 		 */
@@ -1060,33 +1062,38 @@ struct str_trace (
 			
 			trace_absolu
 		),
-	
-		 
-		fn actualiser 	_this 	=(
+		
+		
+		--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+		----------- INTERFACE ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+		--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+	public
+		---- Actualiser ----
+		fn actualiser 	 	=(
 -- 			
 			
-			_this.trace_courant = _this.trace_original as array
-			actualiser_axeP 	_this
+			m_this.trace_courant = m_this.trace_original as array
+			actualiser_axeP 	()
 			
 			---- orthonormer -----------
-			if _this.trace_ortho 			do	orthonormer	_this
-			if _this.trace_souder		do	souder			_this
-			if _this.trace_optimiser 	do	optimiser		_this
-			if _this.trace_aligner 		do	aligner 			_this 	
-			subdiviser		_this 	
-			if _this.sousTraces_use 	then	decouper 		_this 		
+			if m_this.trace_ortho 			do	orthonormer	()
+			if m_this.trace_souder		do	souder			()
+			if m_this.trace_optimiser 	do	optimiser		()
+			if m_this.trace_aligner 		do	aligner 			() 	
+			subdiviser		() 	
+			if m_this.sousTraces_use 	then	decouper 		() 		
 			else (
-				local nvTrace = str_ssTrace 	trace:(for i = 1 to _this.trace_courant.count collect i ) 	etages:_this.niveaux_nbre
-				_this.trace.sousTraces = #(nvTrace)
+				local nvTrace = str_ssTrace 	trace:(for i = 1 to m_this.trace_courant.count collect i ) 	etages:m_this.niveaux_nbre
+				m_this.trace.m_sousTraces = #(nvTrace)
 			)
 		 
-		 
-		 
--- get_datas_string 		_element
--- set_datas_string 		_datas_string 		_element 	_this
-			
-			_this.soustraces = for ssTrace in sousTraces collect datasMgr.get_datas_string  ssTrace
+			m_this.sousTraces = for ssTrace in m_sousTraces collect m_datasMgr.get_datas_string  ssTrace
 		),
+		
+		---- Accessions ----
+		fn 	sousTrace_fromString  	_string	_sousTrace		=	m_datasMgr.set_datas_string 		_string 		_sousTrace,
+		fn 	est_pignon 		_id	= estPignon 		_id,
+		
 		
 		fn definir	 	_shapeNvtrace  		_thisNode		=(
 			
@@ -1117,9 +1124,9 @@ struct str_trace (
 				_thisNode.a_un_trace 			= true
 				
 				----- calcul de la surface du trace_courant ------
-				_thisNode.surface = surface 		_thisNode.trace_courant	_thisNode
+				_thisNode.surface = surface 		_thisNode.trace_courant
 			)
-			actualiser  _thisNode
+			actualiser  ()
 		)
 		
 ) -- fin struct TRACE ---------

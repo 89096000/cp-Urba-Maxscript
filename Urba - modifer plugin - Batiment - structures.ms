@@ -65,10 +65,10 @@ struct str_enregistreurDeNode (
 		modele_result
 	),
 
-	fn creer_objet		_modele		_this		ndDest:		transf_mtrx:	=(
+	fn creer_objet		_modele		m_this		ndDest:		transf_mtrx:	=(
 		
 		if ndDest == unsupplied do
-			ndDest = _this.delegate
+			ndDest = m_this.delegate
 		
 		local verts		
 		if transf_mtrx != unsupplied then 
@@ -112,7 +112,7 @@ struct str_enregistreurDeNode (
 struct str_datasMgr (
 	
 		m_prt,
-		m_this,
+		
 		
 		
 	private
@@ -162,7 +162,7 @@ struct str_datasMgr (
 				) else	if classof data_exe == Name then (
 				
 				--------------- un objet ---------------
-					local elemTmp =  ( m_prt.get_parametre_parID	  ( item ) 	_this	)	
+					local elemTmp =  ( m_prt.get_parametre	  item 	)	
 					
 					--- un id (name)------
 					if elemTmp == undefined do
@@ -219,7 +219,7 @@ struct str_datasMgr (
 			txtResult
 			
 		),
-		fn set_datas_string 		_datas_string 		_element 	_this	=(
+		fn set_datas_string 		_datas_string 		_element 		=(
 			
 -- 			stack ()
 			
@@ -243,7 +243,7 @@ struct str_datasMgr (
 					string:					(
 						
 -- 							--- on tente le struct ---
--- 							local data =  ( m_prt.get_parametre_parID	  dataTab[2] 	_this	)	
+-- 							local data =  ( m_prt.get_parametre	  dataTab[2] 	m_this	)	
 -- 							
 -- 							--- si pas struct ---
 -- 							if data == undefined do
@@ -267,7 +267,7 @@ struct str_datasMgr (
 								) else	if classof data_exe == Name then (	
 								
 								--------------- un objet ---------------
-									local elemTmp =  ( m_prt.get_parametre_parID	  ( data ) 	_this	)	
+									local elemTmp =  ( m_prt.get_parametre	  data 	)	
 									
 									--- un id (name)------
 									if elemTmp == undefined do
@@ -306,760 +306,526 @@ struct str_datasMgr (
 ------------------------------------------------------------------------------------------------------------------------------------------------------
 --------- STRUCTURES Grandes fonctions -----------------------------------------------------------------------------------------------------
 ------------------------------------------------------------------------------------------------------------------------------------------------------
----- manager des facades -----
-struct 	str_facades (
+struct	str_geo	(
 	
-	------------ DEBUG	-------------------------------------------------------------------------------------------------------------------------
-	m_debug = true,
-	m_dbgPrefix ="urba | str_facades",
-	fn debug 	_txt  var:	 param:    =(
-		try if m_debug do ::debuger 	_txt  	var:var	 param:param	prefix:m_dbgPrefix
-		catch ()
+	m_this, 
+	
+	fn vider 													=(
+		if (polyop.getNumFaces m_this.delegate) >0 do (
+			local listeDesFaces = #{1..(polyop.getNumFaces m_this.delegate)} as array
+			polyop.deleteFaces m_this.delegate	listeDesFaces		delIsoVerts:true
+			polyop.deleteIsoVerts m_this.delegate
+		)
 	),
 	
 	
 	
-	
-	------------------------------------------------------------------------------------------------------------------------------------------------------
-	------------ MEMBRES	--------------------------------------------------------------------------------------------------------------------------
-	------------------------------------------------------------------------------------------------------------------------------------------------------
-	---- Pointeurs divers --------------------
-	public
-		dialog,
-		constr_ptr,
 		
-	---- Parametres de la fenetre  --------------------
-	private
-		dialog_pos 					= [1235,223],
-		dialog_estOuvert 			= false,
-		
-	---- Pour manipuler les parametres du batiment  --------------------
-		datasMgr 					= str_datasMgr 	m_prt:this,
-		params_aEnregistrer 	= #(	#nom, #etages_nbre_min, #etages_nbre_max, #longueur_min, #longueur_max, #murs, #repeter, #etirer, #sequence	),		
-		presets 						= str_presets_batiment 	fichier_dossier:			( getDir #userScripts	 + "\\cp-Urba\\lib\\façades\\"		)	\
-																			fichier_categorie:			"Urba - Façades"	\
-																			fichier_extension:			"fcd"	\
-																			params_aEnregistrer:	params_aEnregistrer,
-		
-	---- Le scanner de mesh  --------------------
-		scan 							= str_enregistreurDeNode (),
-		
-	---- Les parametres du batiment  --------------------
-	private
-		facades_total				= #(), ---- les facades du batiment en struct---------------
-		composants_total		= #(), ---- les composant du batiment en struct---------------
-		modeles_total				= #(), ---- les modeles du batiment en struct---------------
-		parametriques_total		= #(), ---- ---------------
-		
-		facade_courante 			= str_facade (),
-		id_courant = 0,
-		composant_courant 	,
-		modele_courant	,
-		
-		
-		
-		
-	
-		------------------------------------------------------------------------------------------------------------------------------------------------------
-		------------ FONCTIONS	----------------------------------------------------------------------------------------------------------------------
-		------------------------------------------------------------------------------------------------------------------------------------------------------
-		
-		----------------	 Accessions				 	--------------------------------------------------------------------------------------------------------
-	private
-		----	Composants 	----
-		fn get_composant_idUnique_param	_id 	_this =(
-			local strg_param 	= _this.facades_composants[_id]
-			local idStrg 			= findstring 	strg_param		"#FAC_CMP_"
-			local result 			= substring 	strg_param 	idStrg	  19 
+		fn points	_liste_pts_position								=(
+			local result = #()
+			for pos_pts in _liste_pts_position do 			
+				append result ( polyop.createVert 	m_this.delegate		pos_pts )
 			result
 		),
-		fn get_composants_ids_param 				_this =(
-			local result =#()
-			for i = 1 to _this.facades_composants.count	 do (
-				append result  ( get_composant_idUnique_param i	_this )
+		fn edges	_liste_pts_id					fermer:false	=(
+			local result = #()
+			
+			for i = 1 to _liste_pts_id.count - 1	 do 	(	
+				local pt_id_1 = _liste_pts_id[i]
+				local pt_id_2 = _liste_pts_id[i+1]
+				append result ( polyop.createEdge 	m_this.delegate	 pt_id_1	 pt_id_2 )
+			)
+			if fermer do (
+				local pt_id_1 = _liste_pts_id[_liste_pts_id.count]
+				local pt_id_2 = _liste_pts_id[1]
+				append result ( polyop.createEdge 	m_this.delegate	 pt_id_1	 pt_id_2 )
 			)
 			result
 		),
-		fn get_composant_idParam		_idUnique	_this	=(
-			
-			local composants_ids = get_composants_ids_param 	_this	
-			local result = 0
-			for i= 1 to 	composants_ids.count	 do
-				if composants_ids[i] == _idUnique do result = i
+		fn face		_liste_pts_id					matID:			=(
+			local result = polyop.createPolygon m_this.delegate  _liste_pts_id
 			result
-		),
-		fn get_composant			_idUnique	_this	=(
-			
-			local result
-			for compo in composants_total do
-				if compo.id == _idUnique do result = compo
-			result
-			
 		),
 		
-		----	Modeles	 ----
-		fn get_modele_idUnique_param	_id 	_this =(
-			local strg_param 	= _this.facades_modeles[_id]
-			local idStrg 			= findstring 	strg_param		"#FAC_MOD_"
-			local result 			= substring 	strg_param 	idStrg	  19 
-			result
+		fn pointsEtFaces  _liste_pts_position	=(
+			local id_pts 	= points 	_liste_pts_position
+			local id_edges	= edges 	id_pts
+			local idFace 	= face		id_pts
+			idFace
 		),
-		fn get_modeles_ids_param 	_this =(
-			local result =#()
-			for i = 1 to _this.facades_modeles.count	 do (
-				append result  ( get_modele_idUnique_param i	_this )
+		
+		
+		fn faceVerticale 	pt1 	pt2 		z 					ht:			=(
+		
+			local VERSION_BACK = true
+			
+			if not VERSION_BACK then (
+				------------	NOUVELLE VERSION	----------------
+				
+				
+			) else (  
+				------------	VERSION BACK 	----------------
+				
+				local hauteur 
+				if ht != unsupplied then	hauteur = ht
+					else hauteur 	=	m_this.niveaux_hauteur 
+				
+				local verts = polyop.getNumVerts m_this.delegate		
+				
+				polyop.createVert m_this.delegate	[pt2.x, pt2.y, z]	
+				polyop.createVert m_this.delegate	[pt1.x, pt1.y, z]
+				polyop.createVert m_this.delegate	[pt1.x, pt1.y, z + hauteur]
+				polyop.createVert m_this.delegate	[pt2.x, pt2.y, z + hauteur]
+				
+				polyop.createEdge m_this.delegate (verts+1) (verts+2)
+				polyop.createEdge m_this.delegate (verts+2) (verts+3)
+				polyop.createEdge m_this.delegate (verts+3) (verts+4)
+				polyop.createEdge m_this.delegate (verts+4) (verts+1)
+				
+				polyop.createPolygon m_this.delegate  #((verts+4),(verts+3),(verts+2),(verts+1))
 			)
-			result
 		),
-		fn get_modele_idParam		_idUnique	_this	=(
+		fn facesContour	ptsContours	 altitude 		hauteur 			=(
 			
-			local modeles_ids = get_modeles_ids_param 	_this	
-			local result = 0
-			for i= 1 to 	modeles_ids.count	 do
-				if modeles_ids[i] == _idUnique do result = i
-			result
-		),
-		fn get_modele		_idUnique	_this	=(
-			local result
-			for modele in modeles_total do
-				if modele.id == _idUnique do result = modele
-			result
-		),
-		
-		----	Composants 	parametriques 	----
-		fn get_parametrique_idUnique_param		_id 	_this =(
-			local strg_param 	= _this.facades_parametriques[_id]
-			local idStrg 			= findstring 	strg_param		"#FAC_P"
-			local result 			= substring 	strg_param 	idStrg	  19 
-			result
+			local VERSION_BACK = true
 			
-		),
-		fn get_parametriques_ids_param 	_this =(
-			local result =#()
-			for i = 1 to _this.facades_parametriques.count	 do (
-				append result  ( get_parametrique_idUnique_param 	i	_this )
-			)
-			result
-		),
-		fn get_parametrique_idParam		_idUnique	_this	=(
-			
-			local modeles_ids = get_parametriques_ids_param 	_this	
-			local result = 0
-			for i= 1 to 	modeles_ids.count	 do
-				if modeles_ids[i] == _idUnique do result = i
-			result
-		),
-		fn get_parametrique		_idUnique	_this	=(
-			local result
-			for param in parametriques_total do
-				if param.id == _idUnique do result = param
-			result
-		),
-		
-		----	 get universelle 	----
-		fn get_parametre_parID	_iUnique		 _this =(
-			
-			---- un composant ------------
-			local elemTmp =  ( get_composant  _iUnique 	_this	)	
-			
-			---- un modele ------------
-			if elemTmp == undefined do 
-				elemTmp = ( get_modele  _iUnique 	_this	)	
-			
-			---- un parametrique ------------
-			if elemTmp == undefined do 
-				elemTmp = ( get_parametrique  _iUnique 	_this	)	
-			
-			elemTmp
-		),
-		
-		
-		
-		
-
-		
-		
-		----------------	 PARAM  <---->  STRUCT 	--------------------------------------------------------------------------------------------------------
-	private
-		----- creation des structs -----
-		fn params_toStructs 	_this	=		(
-			
-			------ Modeles -------
-			modeles_total				= #()
-			for modele in _this.facades_modeles 	do (
-				local nvModele =   str_facade_modele ()
-				datasMgr.set_datas_string		modele		nvModele	_this
-				append modeles_total 	nvModele
-			)
-			
-			------ Parametriques -------
-			parametriques_total				= #()
-			for strg_param in _this.facades_parametriques 	do (
-				local nvParam 					
-				local idStrg 		= findstring 	strg_param		"#FAC_P"
-				local type	 		= substring 	strg_param 	(idStrg+6)	  2 
-				case type of (
-					"MP": 	nvParam = str_facadeParam_murPlein ()
-					"BS":		nvParam = str_facadeParam_baieSimple ()
-					"BT":		nvParam = str_facadeParam_baie ()
-					"ES":		nvParam = str_facadeParam_espacement ()
-					"BD":		nvParam = str_facadeParam_balcon ()
-					"BF":		nvParam = str_facadeParam_balconFin ()
+			if not VERSION_BACK then (
+				------------	NOUVELLE VERSION	----------------
+				
+				
+			) else (  
+				------------	VERSION BACK 	----------------
+				
+				local facesDuContour =#()
+				local listePts = #()
+				if hauteur <0 then
+					listePts = for i = ptsContours.count to 1 by -1 collect ptsContours[i]
+				else listePts = ptsContours
+				
+				for i_pt = 1 to listePts.count do	 (
+					local pt_1 = listePts[i_pt]
+					local pt_2 
+					
+					if i_pt == listePts.count then
+						pt_2 = listePts[1]
+					else pt_2 =  listePts[i_pt + 1 ]
+					
+					local nvlFace = faceVerticale 		pt_1		pt_2 	altitude 		ht:hauteur
+					if nvlFace != undefined do
+						appendIfUnique facesDuContour	nvlFace
+					
 				)
-				datasMgr.set_datas_string			strg_param		nvParam		_this
-				append parametriques_total 		nvParam
-			)
-			
-			
-			------ Composants -------
-			composants_total		= #()
-			for compo in _this.facades_composants 	do (
-				local nvCompo =   str_facade_composant ()
-				datasMgr.set_datas_string		compo		nvCompo	_this
-				append composants_total 		nvCompo
-				if nvCompo.type == #parametrique do
-					nvCompo.param[1].actualiser 	nvCompo		constr_ptr
-			)
-			
-			------ Façades -------
-			facades_total				= #()
-			for fac in _this.facades_items 	do (
-				local nvfacade =   str_facade ()
-				datasMgr.set_datas_string		fac		nvfacade	_this
-				append facades_total 		nvfacade	
-			)
-			
-		),
-		----- Enregistrer les structs dans les parametres  -------------------------------------
-		fn enregistrer_parametrique		_param	_this =(
-			
-			local id_param = get_parametrique_idParam		_param.id		_this
-			
-			if id_param != 0 then
-				_this.facades_parametriques[id_param] = 	(datasMgr.get_datas_string  _param)
-			else
-				append	_this.facades_parametriques			(datasMgr.get_datas_string  _param)
-			
-		),
-		fn enregistrer_modele		_modele	_this =(
-			
-			local id_modele = get_modele_idParam		_modele.id	_this
-			
-			if id_modele != 0 then
-				_this.facades_modeles[id_modele] = 	(datasMgr.get_datas_string  _modele)
-			else
-				append	_this.facades_modeles			(datasMgr.get_datas_string  _modele)
-			
-		),
-		fn enregistrer_composant	 _composant	_this =(
-			
-			local id_compo 			= get_composant_idParam		_composant.id		_this
-			
-			local string_compo 		= (datasMgr.get_datas_string  _composant)
-			
-			if id_compo != 0 then (
-				_this.facades_composants[id_compo] =	string_compo
-			) else (
-				append	_this.facades_composants			string_compo
-			)
-			
-		),
-		fn enregistrer_facade		_facade		_this =(
-			
-			
-			local sequence_longueur = 0			
-			for compo in _facade.sequence do (
 				
-				sequence_longueur += compo.longueur
+				facesDuContour
 				
-				for modele in compo.modeles do 
-					enregistrer_modele	modele	 _this 
-				
-				enregistrer_parametrique	compo.param[1]	 _this 
-				enregistrer_composant		compo	 		_this 
 			)
-			
-			facade_courante.sequence_longueur = sequence_longueur
-			enregistrer_facade		_facade		_this 
-			
-			
-			
-			
-			
-			
-			
-			
-			
-			local id_compo 		= id_courant
-			local string_compo 	= (datasMgr.get_datas_string  _facade )
-			
-			if id_courant != 0 then
-				_this.facades_items[id_courant] = (datasMgr.get_datas_string  _facade)
-			else
-				append	_this.facades_items		(datasMgr.get_datas_string  _facade)
-			
-		),
+		)
 		
-		
+-- 	) -- fin creer
+	
+) --- fin GEo
+
+
+
+
+
+
+
+struct str_constr_outils (
 		
 	
-		
-		
-		----------------	 Constructeurs			 	--------------------------------------------------------------------------------------------------------
-	private
-		-- creer une instance temporaire d'un composant mur plein et la renvois -----
-		fn get_murPlein	_longueur	_this	 =(
-			local 	nvComposant 	= 	str_facade_composant 	type:#Parametrique
-			local 	nvParam 		= 	str_facadeParam_murPlein			()
-			nvComposant.param 					= #( nvParam )
-			nvComposant.param[1].initialiser 	nvComposant		_this.construire	
-			nvComposant.longueur = _longueur
-			nvComposant
+	
+	
+	
+		---- manipulation de tableaux ----
+		fn ComparerTableaux 	first 	second =
+		(
+			result = true
+			if first.count != second.count then
+				result = false
+			else
+				for i = 1 to first.count do
+					if first[i] != second[i] do result = false
+			result
 		),
-		
-		--- creations de base -------
-		fn creer_modele				_composant	_node	_this	=(
-			
-			--- preparation du model -------
-			local nd_Tmp 			=  _node
-			local transformBack 	=	_node.transform
-			positionnerPivot_modele 	nd_Tmp
-			nd_Tmp.rotation = quat 0 0 0 1
-			nd_Tmp.pos  = [0,0,0]
-			
-			--- creation de l'objet ----
-			local nvModele = 		scan.get_datas 		nd_Tmp			
-			if 	_composant.longueur < nvModele.longueur	do
-				_composant.longueur = nvModele.longueur			
-			nvModele.nom		+=	" " + _composant.modeles.count as string
-			_node.transform 	= 		transformBack
-			
-			--- on le range dans les tableaux -----
-			append _composant.modeles				nvModele
-			append _composant.modeles_probas 	100
-			
-			append modeles_total	nvModele
-			
-			
-		),
-		fn creer_composant		_pos	 _type	_this 		param_type:		=(	--- param_type: pour creation composant parametrique	--->	#MurPlein	, 	#BaieSimple, 
-			debug "creer_composant"
-			
-			local nvComposant 	= str_facade_composant 	type:_type
-			local nvParam
-			
-			case param_type as name of (
-				#MurPlein:			nvParam 	= 	str_facadeParam_murPlein			()		
-				#BaieSimple:		nvParam 	= 	str_facadeParam_baieSimple		() 
-				#BaieTablette:	nvParam 	= 	str_facadeParam_baie				() 
-				#Espacement:		nvParam 	= 	str_facadeParam_espacement	() 
-				#Balcon:			nvParam 	= 	str_facadeParam_balcon			() 
-				default:				()
-			)
-			
-			--- exceptions -------------
-			if nvParam != undefined do (
-				nvComposant.param = #( nvParam )
-				nvComposant.param[1].initialiser 	nvComposant		_this.construire	
-				append 		parametriques_total		nvComposant.param[1]
-			)
-			
-			if param_type as name == #Balcon do (
-				
-				local nvCompo_balconFin 	= str_facade_composant 	type:_type
-				nvCompo_balconFin.param = #( str_facadeParam_balconFin 	() )
-				nvCompo_balconFin.param[1].initialiser 	nvCompo_balconFin		_this.construire	
-				
-				
-				append 		parametriques_total		nvCompo_balconFin.param[1]
-				
-				insertItem 	nvCompo_balconFin 			facade_courante.sequence 	( _pos + 1 )			
-				append 		composants_total	nvCompo_balconFin
-				
-			)
-			
-			
-			
-			
-			
-			insertItem 	nvComposant 			facade_courante.sequence 	( _pos + 1 )			
-			append 		composants_total	nvComposant
-			
-			nvComposant
-			
-		),
-		fn creer_facade 						_this	=(
-			local nvlFacade = str_facade ()
-			
-			nvlFacade.nom	+=	" " + (_this.facades_items.count + 1  ) as string
-			append facades_total	nvlFacade
-			nvlFacade
-		),
-		
-		--- Copie et instanciations -------
-		fn dupliquer_composant		_idCompoADupliquer	 	_this 	=(
-			
-			local composantSource 	= 	facade_courante.sequence[_idCompoADupliquer]		
-
-			-- si balcon on degage
-			if _idCompoADupliquer == 0 do
-				return	0
-			
-			
-			local nvComposant 			=  str_facade_composant 	type:composantSource.type
-			debug "nvComposant ETAPE 1" var:nvComposant
-			
-			
-			-- Parametrique ----
-			if composantSource.type == #parametrique do (
-				local nvParam			
-				
-				debug "classof composantSource.param" var:(classof composantSource.param)
-				
-				case classof composantSource.param[1]  of (
-					str_facadeParam_murPlein:		nvParam 	= 	str_facadeParam_murPlein			()		
-					str_facadeParam_baieSimple:		nvParam 	= 	str_facadeParam_baieSimple		() 
-					str_facadeParam_baie:				nvParam 	= 	str_facadeParam_baie				() 
-					str_facadeParam_espacement:	nvParam 	= 	str_facadeParam_espacement	() 
-					str_facadeParam_balcon:			nvParam 	= 	str_facadeParam_balcon			() 
-					default:									()
-				)
-			debug "nvComposant ETAPE 2" var:nvComposant
-				debug "nvParam DUPLICATE 1" var:nvParam
-				if nvParam != undefined do (
-					-- copier les params
-					local params_aCopier = getPropNames composantSource.param[1]
-					for nomProp in params_aCopier do (
-						local prop = ( getProperty  composantSource.param[1] 	nomProp )
-						case classof prop of (
-							MAXScriptFunction:	()
-							default:					setProperty nvParam  nomProp	 (copy  prop)
-						)
+		fn virerDoublonsDansTableau  _tab = (
+			for i = 1 to _tab.count do
+			(
+				for j = _tab.count to i+1 by -1 do
+				(
+					test = ( ComparerTableaux  _tab[i] _tab[j] )
+					if test do
+					(
+						deleteItem _tab j
 					)
-					nvComposant.param = #( nvParam )
-					debug "nvComposant DUPLICATE 2" var:nvComposant
-					nvComposant.param[1].initialiser 	nvComposant		_this.construire	
-					
-					debug "nvComposant DUPLICATE 3" var:nvComposant
-					append 		parametriques_total		nvComposant.param[1]
-					debug "nvComposant DUPLICATE 4" var:nvComposant
-					
-					debug "nvComposant DUPLICATE 5" var:nvComposant
-				)
-			debug "nvComposant ETAPE 6" var:nvComposant
-			)
-			debug "nvComposant ETAPE FIN" var:nvComposant
-			
-			
-			
-			
-			
-			
-			-- copie des proprietes du composant
-			nvComposant.nom 			=	/* copy */ composantSource.nom	
-			nvComposant.longueur		=	/* copy */ composantSource.longueur
-			nvComposant.hauteur		= 	/* copy */ composantSource.hauteur
-			
-			
-			
-			insertItem 	nvComposant 			facade_courante.sequence 	( _idCompoADupliquer + 1 )			
-			append 		composants_total	nvComposant
-			
-			nvComposant
-			
-			debug "nvComposant DUPLICATE" var:nvComposant
-		),
-		fn dupliquer_facade 			_id			_this	=(
-			local facadesource 	= 	facades_total[_id]
-			local nvlFacade 		= 	str_facade ()
-			local stringFacade 	= 	datasMgr.get_datas_string 	facadesource 
-			datasMgr.set_datas_string		stringFacade		nvlFacade	_this
-			
-			
-			
-			nvlFacade.nom	+=	" " + (_this.facades_items.count + 1  ) as string
--- 			append _this.facades_items (datasMgr.get_datas_string  nvlFacade)
-			append facades_total	nvlFacade
-			nvlFacade
-		),
-		
-		--- Suppressions -------
-		fn supprimer_facade		_id	_this		 	=(
-			
-			local facadeAVirer = facades_total[_id]
-			
-			for compo in facadeAVirer.sequence do (
-				supprimer_composant	compo
-			)
-			
-			------ Parametriques -------
-			parametriques_total				= #()
-			for strg_param in _this.facades_parametriques 	do (
-				local nvParam 					
-				local idStrg 		= findstring 	strg_param		"#FAC_P"
-				local type	 		= substring 	strg_param 	(idStrg+6)	  2 
-				case type of (
-					"MP": 	nvParam = str_facadeParam_murPlein ()
-					"BS":		nvParam = str_facadeParam_baieSimple ()
-					"BT":		nvParam = str_facadeParam_baie ()
-					"ES":		nvParam = str_facadeParam_espacement ()
-					"BD":		nvParam = str_facadeParam_balcon ()
-					"BF":		nvParam = str_facadeParam_balconFin ()
-				)
-				datasMgr.set_datas_string			strg_param		nvParam		_this
-				append parametriques_total 		nvParam
-			)
-			
-			
-			------ Composants -------
-			composants_total		= #()
-			for compo in _this.facades_composants 	do (
-				local nvCompo =   str_facade_composant ()
-				datasMgr.set_datas_string		compo		nvCompo	_this
-				append composants_total 		nvCompo
-				if nvCompo.type == #parametrique do
-					nvCompo.param[1].actualiser 	nvCompo		constr_ptr
-			)
-			
-			
-			
-			
-			deleteItem 	facades_total 		_id
-			
-			
-			
-			
-			deleteItem 	_this.facades_items		_id
+				)--end j loop
+			)--end i loop
 		),
 		
 		
 		
 		
 		
-			
 		
-		----------------	 FENETRE				 	----------------------------------------------------
-	public
-		fn est_ouvert = dialog_estOuvert,
-		fn fermer 						_this		quiet:false	=(
+		---- groupes de selection  ----
+		fn grouperFaces 	_node 	_faces 	_nom 	=(
+			if _node.faces[_nom] == undefined  
+							then		_node.faces[_nom] = 	_faces
+							else		(								
+								tabFaces = for face in _node.faces[_nom] collect face.index
+								tabFaces += _faces
+								_node.faces[_nom] = tabFaces
+							)
+		),
+		fn degrouperFaces 	_node 	_facesARetirer 	_nom 	=(
+			if _node.faces[_nom] != undefined  do		(								
+				tabFaces = for face in _node.faces[_nom] collect 	face.index
+					for  _face in _facesARetirer do (
+						idItem = findItem tabFaces   _face
+						if idItem >0 do deleteItem 	tabFaces  idItem
+					)
+				_node.faces[_nom] = tabFaces
+			)
+		),
+		
+		
+		
+		---- manipulation des selection  ----
+		fn etendreSelecFaces		_node 	_faces	= (
 			
-			-- on demande si on veut enregistrer ----
-			if not quiet do if queryBox "Enregistrer les modifications ?"	title:"Urba | Bâtiment | Façade" 	do 
-					enregistrer_facade 	 facade_courante		_this
-			
-			--- Actiualiser position de la fenetre ----
-			if dialog_estOuvert do
-				dialog_pos = getDialogPos dialog	
-			dialog_estOuvert = false
-			
-			---- fermer la fenêtre ----
-			try destroydialog dialog catch ()
+			_faces_a_retirer = _faces 		---- ( polyop.getFaceSelection  _node ) as array
+			_node.EditablePoly.GrowSelection ()
+			_facesExtension	= ( polyop.getFaceSelection  _node ) 
+			for face in _faces_a_retirer 	do _facesExtension	[face] 	= false
+			polyop.setFaceSelection  _node 	_facesExtension	
 			
 		),
-		fn ouvrir  			_id 		_this =(
+		
+		fn etendreFaces		_node 	_faces	= (
+			local selectBack = polyop.getFaceSelection  _node
+			polyop.setFaceSelection  _node 	_faces
+			_node.EditablePoly.GrowSelection ()
+			local facesEtendus	=  polyop.getFaceSelection  _node 
+			format "facesEtendus : %\n" facesEtendus
+			polyop.setFaceSelection  _node  selectBack
+			facesEtendus
+		),
+		
+		fn facesDuDessous		_node	_faces	=	(
 			
-			id_courant 			= _id
-			facade_courante 	= str_facade ()
-			facade_courante 	= facades_total[_id]	--datasMgr.set_datas_string 		_this.facades_items[id_courant]  	 facade_courante		_this
-			
-			
-			include "$userScripts\cp-Urba\Urba - modifer plugin - Batiment - rollout facade.ms"
-			dialog = roll_urba_editeurFacades
-			
-			---- creation de la fenetre ----
-			createDialog dialog 	style:				#(#style_resizing) 	\
-										pos:				dialog_pos
--- 										lockHeight:		true						\
--- 										lockWidth:		true						\
-			dialog_estOuvert = true
-			
-			---- initialisation de la fenetre ----
-			dialog.m_prt	 	= this
-			dialog.m_cible 		= _this
-			dialog.m_facade 	= facade_courante
-			
-			dialog.initialiser ()
-			
-		)
-		
-		
-) ---------- fin struct FACADES ----------------------
-
-
-
-
-
-struct	str_manipEdiPoly_creer	(
-	
-	
-	fn points	_liste_pts_position	_this	=(
-		local result = #()
-		for pos_pts in _liste_pts_position do 			
-			append result ( polyop.createVert 	_this.delegate		pos_pts )
-		result
-	),
-	fn edges		_liste_pts_id		_this		fermer:false	=(
-		local result = #()
-		
-		for i = 1 to _liste_pts_id.count - 1	 do 	(	
-			local pt_id_1 = _liste_pts_id[i]
-			local pt_id_2 = _liste_pts_id[i+1]
-			append result ( polyop.createEdge 	_this.delegate	 pt_id_1	 pt_id_2 )
-		)
-		if fermer do (
-			local pt_id_1 = _liste_pts_id[_liste_pts_id.count]
-			local pt_id_2 = _liste_pts_id[1]
-			append result ( polyop.createEdge 	_this.delegate	 pt_id_1	 pt_id_2 )
-		)
-		result
-	),
-	fn face		_liste_pts_id		_this		=(
-		local result = polyop.createPolygon _this.delegate  _liste_pts_id
-		result
-	)
-	
-	/*
-	--- RAJOUTER PT SUR EDGE ---------
-	local nvVert = polyop.divideEdge 	<Poly poly> 	<int edge>	 <float fraction>
-	*/
-	
-)
-
-
-
------------ Creation des geometries poly ----------------
-struct str_geo (
-	creer = str_manipEdiPoly_creer (),
-	
-	fn vider 											_this					nd:			=(
-		local cible
-		if nd == unsupplied then cible = _this.delegate else cible = nd 
-		if (polyop.getNumFaces cible) >0 do (
-			local listeDesFaces = #{1..(polyop.getNumFaces cible)} as array
-			polyop.deleteFaces cible	listeDesFaces		delIsoVerts:true
-			polyop.deleteIsoVerts cible
-		)
-	),
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	fn creerFace  		_listeDesPoints  	_this	 nd: 		matID:						=(
-		
-		
-		local  ndCible 	= if nd != unsupplied then nd else _this.delegate
-		local verts 	= polyop.getNumVerts ndCible
-		
-		-- les vertex --
-		for pt in  _listeDesPoints do 
-				polyop.createVert ndCible	pt 
-		
-		-- les edges --
-		for i = 1 to _listeDesPoints.count do (
-			local j= i+1
-			if j > _listeDesPoints.count do j = 1
-			polyop.createEdge ndCible (verts+i) (verts+j) 
-		)
-		
-		-- la face --
-		local listeVertexPrFace = #()
-		for i = 1 to _listeDesPoints.count  do 
-			append listeVertexPrFace ( verts+i )
-		
-		local idNvlleFace = polyop.createPolygon ndCible  listeVertexPrFace 
-		
-		--Mat ID
-		if matID != unsupplied do polyop.setFaceMatID ndCible  #(idNvlleFace) 	matID
-		
-		idNvlleFace
-		
-	),
-	
-	
--- 	creerFaceVerticale 	pt1 	pt2 	( z + hauteur_modele )		_this 		ht:hauteurQuiReste	
--- 	_this.niveaux_hauteur 
-	
-	fn creerFaceVerticale 	pt1 	pt2 	z 	_this				ht:			=(
-		
-		local VERSION_BACK = true
-		
-		if not VERSION_BACK then (
-			------------	NOUVELLE VERSION	----------------
-			
-			
-		) else (  
-			------------	VERSION BACK 	----------------
+			local _selectBack 	= 	polyop.getFaceSelection  _node 
+			local	_facesDuBas 	= #()
+			for _face in _faces do (
+				polyop.setFaceSelection  	_node 	#(_face)
+				outils.etendreSelecFaces 	_node 	#(_face)
+				facesCadre = polyop.getFaceSelection  _node
+				local		_faceDuBas
+				for _faceCadre in facesCadre do 
+					if _faceDuBas == undefined 	
+						then _faceDuBas = _faceCadre
+					else	if ( outils.centreDeLaFace	_node	_faceCadre ).z  <  (outils.centreDeLaFace	_node	_faceDuBas ).z 	
+						then _faceDuBas = _faceCadre
 				
-			local hauteur 
-			if ht != unsupplied then	hauteur = ht
-				else hauteur 	=	_this.niveaux_hauteur 
-			
-			local verts = polyop.getNumVerts _this.delegate		
-	-- 		format "verts avant :%\n" verts
-			
-			polyop.createVert _this.delegate	[pt2.x, pt2.y, z]	
-	-- 		format "result :%\n" result
-			polyop.createVert _this.delegate	[pt1.x, pt1.y, z]
-			polyop.createVert _this.delegate	[pt1.x, pt1.y, z + hauteur]
-			polyop.createVert _this.delegate	[pt2.x, pt2.y, z + hauteur]
-			
-	-- 		format "polyop.getNumEdges delegate :%\n" (polyop.getNumEdges delegate)
-			
-			polyop.createEdge _this.delegate (verts+1) (verts+2)
-			polyop.createEdge _this.delegate (verts+2) (verts+3)
-			polyop.createEdge _this.delegate (verts+3) (verts+4)
-			polyop.createEdge _this.delegate (verts+4) (verts+1)
-			
-			polyop.createPolygon _this.delegate  #((verts+4),(verts+3),(verts+2),(verts+1))
-		)
-	),
-	fn creerFacesContour	ptsContours	 altitude 		hauteur 		_this	=(
-		
-		local VERSION_BACK = true
-		
-		if not VERSION_BACK then (
-			------------	NOUVELLE VERSION	----------------
-			
-			
-		) else (  
-			------------	VERSION BACK 	----------------
-			
-			local facesDuContour =#()
-			local listePts = #()
-			if hauteur <0 then
-				listePts = for i = ptsContours.count to 1 by -1 collect ptsContours[i]
-			else listePts = ptsContours
-			
-			for i_pt = 1 to listePts.count do	 (
-				local pt_1 = listePts[i_pt]
-				local pt_2 
-			
-				if i_pt == listePts.count then
-					pt_2 = listePts[1]
-				else pt_2 =  listePts[i_pt + 1 ]
-				
-				local nvlFace = creerFaceVerticale 		pt_1		pt_2 	altitude 	_this	ht:hauteur
-				if nvlFace != undefined do
-					appendIfUnique facesDuContour	nvlFace
+				append _facesDuBas _faceDuBas
 			)
 			
-			facesDuContour
+			format "Faces du bas : %\n" _facesDuBas
+			polyop.setFaceSelection  _node 	_selectBack
 			
-		)
-	)
-	
-) --- fin struct geo
-
-
+			for _face in _facesDuBas do
+				format "face : %  centre Z : % \n" 	_face	( outils.centreDeLaFace	_node	_face )
+			
+			
+			_facesDuBas
+		),		
+		fn BACKfacesDuDessous		_node	_faces	=	(
+			
+			local	_facesDuBas = #()
+			for _face in _faces do (
+				polyop.setFaceSelection  _node 	#(_face)
+				outils.etendreSelecFaces 		_node 	#(_face)
+				facesCadre = polyop.getFaceSelection  _node
+				local		_faceDuBas
+				for _faceCadre in facesCadre do 
+					if _faceDuBas == undefined 	then _faceDuBas = _faceCadre
+						else	if ( outils.centreDeLaFace		_node		_faceCadre ).z  <  (outils.centreDeLaFace		_node		_faceDuBas ).z 	then _faceDuBas = _faceCadre
+				
+				append _facesDuBas _faceDuBas
+			)
+			
+			format "Faces du bas : %\n" _facesDuBas
+			_facesDuBas
+		),
+		
+		fn faceLaPlusProche		_node		_faces		_ptReference 	= (							
+			local faceLaPlusProche
+			local distMin = 1000000000000.0
+			for faceTmp in _faces do (
+				centreFaceTmp 		= 		outils.centreDeLaFace		_node		faceTmp
+				dist = length 	(  	centreFaceTmp - _ptReference )
+				if dist < distMin do (
+					distMin = dist
+					faceLaPlusProche = faceTmp
+				)
+			)
+			faceLaPlusProche
+		),
+		
+		---- selection par taille ----
+		fn arreteLaPlusPetite		_node		_listeArretes	= (
+			
+			local arretePlusPetite,  longMin
+			
+			for arrete in _listeArretes do (
+				listePoints = polyop.getEdgeVerts  	_node	arrete
+				pt1 = _node.verts[listePoints[1]]
+				pt2 = _node.verts[listePoints[2]]
+				longueurArrete =  length ( pt1.position	- pt2.position  )
+				
+				if longMin == undefined do (
+					longMin = longueurArrete					
+					arretePlusPetite = arrete
+				)
+				
+				if longueurArrete < longMin do (
+					longMin = longueurArrete
+					arretePlusPetite = arrete
+				)
+				
+			) -- fin for do --
+			
+			arretePlusPetite
+			
+		),
+		fn arretesLesPlusPetites		_node		_listeArretes	 nbre: = (
+			
+			local _arretesPlusPetites,  longMin
+			local _nbresArretes = floor ( (_listeArretes as array).count / 2 )
+			local _result = #()
+			
+			if nbre == unsupplied 
+				then		_nbresArretes	= floor ( (_listeArretes as array).count / 2 )
+				else		_nbresArretes	= nbre
+				
+			while _result.count < _nbresArretes do (
+				local _arreteAAJouter = arreteLaPlusPetite		_node		_listeArretes
+				
+				deleteItem	_listeArretes 	_arreteAAJouter
+				append 		_result  		_arreteAAJouter
+			)
+			
+			_result
+			
+		),		
+		fn facesLesPlusPetites	_node	_faces	nbre: =(
+			local _nbresFaces 
+			local _result = #()
+			
+			if nbre == unsupplied 
+				then		_nbresFaces	= floor ( (_faces as array).count / 2 )
+				else		_nbresFaces	= nbre
+			
+			while _result.count != _nbresFaces do (
+				local _min = 1000000000000000000000000000.0
+				local _faceAAJouter
+				for _face in _faces do (
+					if polyop.getFaceArea _node _face <= _min  and (findItem _result _face ) == 0 do (
+						_faceAAJouter 	= _face
+						_min 				= polyop.getFaceArea _node _face 
+					)
+				)
+				append _result 	_faceAAJouter
+			)
+			_result
+		),		
+		fn facesLesPlusGrandes	_node	_faces	nbre:  =(
+			local _nbresFaces 
+			local _result = #()
+			
+			if nbre == unsupplied 
+				then		_nbresFaces	= floor ( (_faces as array).count / 2 )
+				else		_nbresFaces	= nbre
+			
+			while _result.count != _nbresFaces do (
+				local _min = 0.0
+				local _faceAAJouter
+				for _face in _faces do (
+					if polyop.getFaceArea _node _face >= _min  and (findItem _result _face ) == 0 do (
+						_faceAAJouter 	= _face
+						_min 				= polyop.getFaceArea _node _face 
+					)
+				)
+				append _result 	_faceAAJouter
+			)
+			_result
+		),
+		
+		
+		---- selection par position ----
+		fn faceLaPlusHaute 	_node 	_faces = (
+			local  faceHaute 
+			for faceID in _faces do (
+				if faceHaute = undefined do faceHaute = faceID
+				if  ( polyop.getFaceCenter 	_node 	faceID ).z  > ( polyop.getFaceCenter 	_node	faceHaute ).z do
+					 faceHaute = faceID
+			)
+			faceHaute
+		),		
+		fn faceLaPlusBasse 	_node 	_faces = (
+			local  faceHaute 
+			for faceID in _faces do (
+				if faceHaute == undefined do faceHaute = faceID
+				if  ( polyop.getFaceCenter 	_node 	faceID ).z  < ( polyop.getFaceCenter 	_node	faceHaute ).z do
+					 faceHaute = faceID
+			)
+			 faceHaute
+		),
+		
+		
+		fn get_hauteurNodeModele 	_nd	=(
+			local  BB = nodeGetBoundingBox 	_nd	(matrix3 1)
+			local hauteur = BB[2].z -  BB[1].z 
+			hauteur
+		),
+		fn get_largeurNodeModele 	_nd	=(
+			local  BB = nodeGetBoundingBox 	_nd	(matrix3 1)
+			local largeur = BB[2].x -  BB[1].x 
+			largeur
+		),
+		fn get_angle_vecteur 	vec	=(
+			
+			local result = 0
+			local angle_tan = atan ( vec.y / vec.x )
+			
+			if vec.x >=0 then (
+				if vec.y >= 0 then 	result = angle_tan
+				else 	result = 360 + angle_tan
+			) else (		
+				if vec.y >= 0 then 	result = 180 + angle_tan
+				else result = 180 + angle_tan
+			)
+			
+			result
+		),		
+		
+		---- meusures ----
+		fn ZMinFace 	_node  _listeFaces = (
+			
+			local pointLePlusBas
+			
+			for face in _listeFaces do (
+				listePoints = polyop.getFaceVerts  	_node	face
+				for IDpt in listePoints do (
+					pt = _node.verts[IDpt]
+					if pointLePlusBas == undefined do pointLePlusBas = pt.position.z
+					if pointLePlusBas > pt.position.z do pointLePlusBas = pt.position.z
+				)
+			)			
+			 	pointLePlusBas			
+		),
+		fn largeurFace 	_node _face = (
+			local listePoints = polyop.getFaceVerts  	_node	_face
+			local result = 0
+			for  i=1 to listePoints.count-1 do (
+				pt_1 = _node.verts[ listePoints[ i ] ]				
+				for  j=i+1 to listePoints.count do (				
+					pt_2 	= _node.verts[ listePoints[ j ] ]
+					dist 		= length ( pt_2.position - pt_1.position )
+					if pt_1.position.z == pt_2.position.z and dist > result
+						do result = dist
+				)
+			)
+			 result
+		),
+		fn hauteurFace 	_node 	_face = (
+			local _listePoints = polyop.getFaceVerts  	_node	_face
+			local _result = 0, _mini = 10000000000, _maxi = 0
+			for  _pt in _listePoints 	do (
+				_pt = _node.verts[ _pt ]		
+				if _pt.position.z < _mini 	do _mini 	= _pt.position.z
+				if _pt.position.z > _maxi 	do _maxi 	= _pt.position.z
+			)
+			_result = _maxi  - _mini
+			_result
+		),
+		
+		
+		fn centreDeLaFace	_node	_face = (
+			
+			local versionMax = true
+			local centre = [0,0,0]
+			
+			---- la version max fait  une position  moyenne de tout les points , => pb si 5points sur  la face par ex ----
+			if versionMax then
+				centre = polyop.getFaceCenter _node _face
+			
+			---- debut de version centre perso qui deconne ----
+			else (
+				
+				local listePoints 							= polyop.getFaceVerts  	_node	_face
+				local pointsAlignesVerticalement	= #()
+				local ptsResult 								= #()
+				local coinHtG, coinHtD, coinBsG, coinBsD
+				
+				---- regrouper les points alignés verticalement	----
+				for  i=1 to listePoints.count do (
+					
+					local	ID_pt_1 	= listePoints[ i ] 
+					local	pt_1 		= _node.verts[ ID_pt_1 ]				
+					local resultTmp = #( ID_pt_1 )
+					
+					for  j=1 to listePoints.count do (
+						ID_pt_2 = listePoints[ j ] 					
+						pt_2 = _node.verts[ ID_pt_2 ]
+						
+						if floor (  pt_1.position.x * 10 )	== floor ( pt_2.position.x * 10 ) do 
+							if floor ( pt_1.position.y * 10 ) == floor ( pt_2.position.y * 10 ) do 
+								appendIfUnique resultTmp 		ID_pt_2
+						
+					)
+					sort resultTmp
+					
+					if resultTmp.count > 1 do 	append 	 	pointsAlignesVerticalement 		resultTmp
+					
+				)
+				
+				virerDoublonsDansTableau  pointsAlignesVerticalement 
+				
+				---- selection dans chaque groupe de points du plus haut et du plus bas	----
+				for listPts in pointsAlignesVerticalement do (
+					---- min ----
+					local minZ, maxZ
+					for ptID in listPts do (
+						if minZ == undefined do minZ = ptID
+						if maxZ == undefined do maxZ = ptID
+						
+						if _node.verts[ ptID ].position.z > _node.verts[ minZ ].position.z   do minZ =ptID
+						if _node.verts[ ptID ].position.z < _node.verts[ maxZ ].position.z  do maxZ =ptID
+						
+					)
+					append ptsResult minZ
+					append ptsResult maxZ
+				)
+				
+				sort ptsResult
+				
+				---- moyenne des points hauts et bas	----
+				if ptsResult.count != 0 do (
+					for IDpt in ptsResult do  (
+						centre += _node.verts[ IDpt ].position
+						format "_node.verts[ IDpt ].position : %\n" _node.verts[ IDpt ].position
+					)
+					centre = centre / ptsResult.count
+	-- 				format "	=>	centre : %\n" centre
+				)
+						format "face : %\n" 	_face
+				format "	=>	centre : %\n" centre
+				
+				centre
+			)
+		) -- fin else
+		
+)	-- fin struct outils
 
 
 

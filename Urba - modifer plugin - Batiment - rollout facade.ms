@@ -18,7 +18,7 @@
 		------------  Membres	----------------------------------------------------------------------------------
 		---- Pointeurs ----
 		local m_prt				---- pointeur vers la structure de controle ----
-		local m_cible			---  le plugin cilbé
+-- 		local m_cible			---  le plugin cilbé
 		local m_facade
 		local m_composant_courant
 		
@@ -180,20 +180,6 @@
 				
 				if classof comp.param[1] == str_facadeParam_balcon do est_dansBalcon = true
 					
-					/* 
-					str_facadeParam_balcon, str_facadeParam_balconFin
-					case comp.type of (
-						#Parametrique:	append itemsTmp "<--->"
-						#LongueurFixe:	append itemsTmp ("|-----|    "	 )
-						#Modele:			append itemsTmp ("|  #  |    "	+ comp.nom )
-						default:				append itemsTmp comp.nom
-					) */
-				/* case comp.type of (
-					#Espacement:		append itemsTmp "<--->"
-					#LongueurFixe:	append itemsTmp ("|-----|    "	+ comp.longueur as string  + "cm" )
-					#Modele:			append itemsTmp ("|  #  |    "	+ comp.nom )
-					default:				append itemsTmp comp.nom
-				) */
 				
 			)
 			lbx_sequence.items =  itemsTmp
@@ -289,7 +275,7 @@
 		fn ajouter_composant	type		param_type:#sans 	=(
 			
 			format "rollout ---->ajouter_composant\n"
-			m_composant_courant = m_prt.creer_composant		lbx_sequence.selection	 type		m_cible 	param_type:param_type
+			m_composant_courant = m_prt.creer_composant		lbx_sequence.selection	 type		 	param_type:param_type
 			actualiser()
 			
 			lbx_sequence.selection	+= 1
@@ -355,8 +341,7 @@
 						
 						
 			
-		on roll_urba_editeurFacades close do
-		(			
+		on roll_urba_editeurFacades close do	(			
 							try destroyDialog  dialog_modele 			catch ()
 							try destroyDialog  dialog_longueurFixe 	catch ()
 						)
@@ -378,7 +363,7 @@
 		on ui_btnFermer mouseUp do
 			etatBtnFermer #Repos
 		on ui_btnFermer click do
-			m_prt.fermer 	m_cible
+			m_prt.fermer 	()
 		
 		
 		
@@ -436,7 +421,7 @@
 		on btn_dupliquer_composant pressed do
 		(
 			format "rollout ---->ajouter_composant\n"
-			m_composant_courant = m_prt.dupliquer_composant		lbx_sequence.selection	 	m_cible 
+			m_composant_courant = m_prt.dupliquer_composant		lbx_sequence.selection	 	 
 			actualiser()
 			
 			lbx_sequence.selection	+= 1			
@@ -478,12 +463,12 @@
 			ajouter_composant	#Parametrique		param_type:#Espacement
 		on btn_annuler pressed do
 		(
-					m_prt.fermer m_cible
+					m_prt.fermer ()
 				)
 		on btn_valider pressed do
 		(
-					m_prt.valider_facade 	m_cible
-					m_prt.fermer m_cible 	quiet:true
+					m_prt.valider_modifs 	()
+					m_prt.fermer  	quiet:true
 				)
 		on btn_ajouter_murPlein pressed do
 			ajouter_composant	#Parametrique		param_type:#MurPlein

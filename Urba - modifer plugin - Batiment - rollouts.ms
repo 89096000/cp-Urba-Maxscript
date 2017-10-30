@@ -143,20 +143,22 @@ rollout roll_presets "Presets" width:235 height:205	rolledUp:true
 		presets.enregistrer 	this
 	on btn_charger pressed do
 	(
-			presets.charger 		this
-			facades.params_toStructs 	this
+			presets.charger 					this
+-- 			facades.params_toStructs 	this
+			facades.actualiser ()
 		
-			trace.actualiser this
-			construire.batiment this
+			trace.actualiser 	()
+			construire.batiment 	()
 			actualiser_rollouts()
 		)
 	on btn_coller pressed do
 	(
 			presets.coller 	this 
-			facades.params_toStructs 	this
 		
-			trace.actualiser this
-			construire.batiment this
+			facades.actualiser ()
+		
+			trace.actualiser ()
+			construire.batiment ()
 			actualiser_rollouts()
 			
 		)
@@ -222,59 +224,58 @@ rollout roll_trace "Tracé" width:182 height:301
 	
 	
 	
-	on btn_pick_trace picked _nvtrace 	do
+	on btn_pick_trace picked 		_nvtrace 	do
 	(
 			trace.definir		_nvtrace	$
-			trace.actualiser	this
 		
 			this.actualiser_rollouts ()
 		
-			construire.batiment this
-		)
+			construire.batiment ()
+	)
 	
 	on chk_optimiser changed state do
 	(
-		trace.actualiser 	this
-		construire.batiment this
+		trace.actualiser 	()
+		construire.batiment ()
 		actualiser ()
 	)
 	on chk_ortho changed state do
 	(		
-		trace.actualiser this
-		construire.batiment this
+		trace.actualiser ()
+		construire.batiment ()
 		actualiser ()
 	)
 	on spn_optimiser changed val 	do
 	(
-			trace.actualiser this
-			construire.batiment this
+			trace.actualiser ()
+			construire.batiment ()
 		)
 	on chk_souder changed state do
 	(		
-		trace.actualiser this
-		construire.batiment this
+		trace.actualiser ()
+		construire.batiment ()
 		actualiser ()
 	)
 	on spn_souder changed val 	do
 	(
-			trace.actualiser this
-			construire.batiment this
+			trace.actualiser ()
+			construire.batiment ()
 		)
 	on spn_ortho changed val 	do
 	(
-			trace.actualiser this
-			construire.batiment this
+			trace.actualiser ()
+			construire.batiment ()
 		)
 	on chk_aligner changed state do
 	(
-		trace.actualiser 	this
-		construire.batiment this
+		trace.actualiser 	()
+		construire.batiment ()
 		actualiser ()
 	)
 	on spn_aligner changed val 	do
 	(
-			trace.actualiser this
-			construire.batiment this
+			trace.actualiser ()
+			construire.batiment ()
 		)
 )
 rollout roll_global "Global" width:247 height:375
@@ -383,33 +384,33 @@ rollout roll_global "Global" width:247 height:375
 		actualiser ()
 	on spn_rotation_axeP changed arg do
 	(
-			trace.actualiser this
-			construire.batiment 	this
+			trace.actualiser ()
+			construire.batiment 	()
 		)
 	on btn_rotation pressed do
 	(
 			axeP_orientation += 90
-			trace.actualiser 			this
-			construire.batiment 	this
+			trace.actualiser 			()
+			construire.batiment 	()
 		)
 	on btn_rotation_inv pressed do
 	(
 			axeP_orientation -= 90
-			trace.actualiser this
+			trace.actualiser ()
 			
-			construire.batiment this
+			construire.batiment ()
 		)
 	on spn_nbres changed arg do
 	(
-			construire.batiment this
-		)
+			construire.batiment ()
+	)
 /* 	on spn_nbres buttondown do
 		flagForeground $ 	true
 	on spn_nbres buttonup do
 		flagForeground $ 	false */
 	on spn_hauteur changed arg do
 	(
-					construire.batiment this
+					construire.batiment ()
 					
 		)
 	on spn_hauteur buttondown do
@@ -421,34 +422,32 @@ rollout roll_global "Global" width:247 height:375
 -- 			regle_ssTrace_courant.nombre_etages = val
 			actualiser ()
 -- 			trace.structs_toParam 	this
-			trace.actualiser 	this
-			construire.batiment 	this
+			trace.actualiser 	()
+			construire.batiment 	()
 		)
 	on spn_sousTraces_surf_min changed val do
 	(
 -- 			regle_ssTrace_courant.surface_min = val
 			actualiser ()
 -- 			trace.structs_toParam 	this
-			trace.actualiser 	this
-			construire.batiment 	this
-		
+			trace.actualiser 	()
+			construire.batiment 	()
 		)
 	on spn_sousTraces_surf_max changed val do
 	(
 -- 			regle_ssTrace_courant.surface_max = val
 			actualiser ()
 -- 			trace.structs_toParam 	this
-			trace.actualiser 	this
-			construire.batiment 	this
-		
+			trace.actualiser 	()
+			construire.batiment 	()
 		)
 	on chk_sousTraces_surf_max changed state do
 	(
 -- 			regle_ssTrace_courant.surface_max_use = state
 			actualiser ()
 -- 			trace.structs_toParam 	this
-			trace.actualiser 	this
-			construire.batiment 	this
+			trace.actualiser 	()
+			construire.batiment 	()
 		
 		)
 	on chk_sousTraces_surf_min changed state do
@@ -456,8 +455,8 @@ rollout roll_global "Global" width:247 height:375
 -- 			regle_ssTrace_courant.surface_min_use = state
 			actualiser ()
 -- 			trace.structs_toParam 	this
-			trace.actualiser 	this
-			construire.batiment 	this
+			trace.actualiser 	()
+			construire.batiment 	()
 		
 		)
 	on chk_sousTraces changed state do
@@ -465,8 +464,8 @@ rollout roll_global "Global" width:247 height:375
 -- 			regle_ssTrace_courant.surface_max_use = state
 			actualiser ()
 -- 			trace.structs_toParam 	this
-			trace.actualiser 	this
-			construire.batiment 	this
+			trace.actualiser 	()
+			construire.batiment 	()
 		
 		)
 )
@@ -498,52 +497,43 @@ rollout roll_facades "Façades" width:510 height:813
 		btn_ajouterFacade.enabled 	= enabled
 		btn_supprimerFacade.enabled = enabled		
 		
-		if a_un_trace do (
--- 			debug "a_un_trace" var:a_un_trace
--- 			local listTmp = for comp in facades.get_facades_param this collect comp.nom
-			local listTmp = for comp in facades.facades_total  collect comp.nom
--- 			debug "listTmp" var:listTmp
-			lbx_facades.items = listTmp
-		)
+		if a_un_trace do 
+			lbx_facades.items =  facades.get_facades_noms ()
+		
 		
 	)
 	 
 	
 		
-	on roll_facades open do
-	(
-			facades.params_toStructs		this
+	on roll_facades open do	(
+		
+			facades.actualiser ()
 			actualiser()
-	-- 		if facades.est_ouvert () do facades.ouvrir 	lbx_facades.selection 	this
 		)
 	on roll_facades close do
 	(
-	-- 			format "FERMER FENETRE\n"
-			try  destroydialog facades.dialog catch ()
-	-- 		if facades.est_ouvert () do
-	-- 			facades.fermer  this		
-			
+			try  destroydialog facades.dialog catch ()			
 		)
 	on lbx_facades selected arg do
-		if  facades.est_ouvert ()  do	facades.ouvrir 	lbx_facades.selection 	this
+		if  facades.est_ouvert ()  do	facades.ouvrir 	lbx_facades.selection
 	on lbx_facades doubleClicked arg do
-		facades.ouvrir 	lbx_facades.selection 	this
+		facades.ouvrir 	lbx_facades.selection 
+	
 	on btn_ajouterFacade pressed do
 	(
-				facades.creer_facade this
-				facades.ouvrir		(facades.facades_total.count)	this
-	-- 			actualiser() 
+				facades.creer_facade ()
+				facades.ouvrir		(facades.get_facades_count ())	
 			)
 	on btn_supprimerFacade pressed do
 		if queryBox "Supprimer la façade ?"	title:"Urba | Bâtiment | Façade" 	do 
 			with undo "supprimer" on (
-				facades.supprimer_facade  lbx_facades.selection	 this
+				facades.supprimer_facade  lbx_facades.selection	 
 				actualiser()
 			)
 	on btn_dupliquer pressed do
 	(
-				facades.dupliquer_facade	 lbx_facades.selection this
--- 				facades.ouvrir		(facades.facades_total.count)	this
+				facades.dupliquer_facade	 lbx_facades.selection 
+		
 	 			actualiser() 
 			)
 )
@@ -603,12 +593,12 @@ rollout roll_toiture "Toiture" width:236 height:418
 	on ddl_toiture selected sel 	do
 	(
 				actualiser	()
-				construire.batiment this
+				construire.batiment ()
 			)
 	on spn_toit_hauteur changed val 	do
-		construire.batiment this
+		construire.batiment ()
 	on spn_pente changed val 	do
-		construire.batiment this
+		construire.batiment ()
 )
 rollout roll_infos "Infos" width:191 height:142
 (
