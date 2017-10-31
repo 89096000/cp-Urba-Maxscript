@@ -2,8 +2,8 @@
 ------------- declaration en global car erreurs "plugin no active machin..." -----
 global str_plan
 global str_facade_modele
-
-global str_facadeParam_murPlein, str_facadeParam_baie , str_facadeParam_espacement		, str_facadeParam_balcon, str_facadeParam_balconFin
+global str_createur_de_composant
+-- global str_facadeParam_murPlein, str_facadeParam_baie , str_facadeParam_espacement		, str_facadeParam_balcon, str_facadeParam_balconFin
 global str_facade, str_facade_composant	, str_ssTrace		/* , str_regle_ssTrace */
 
 global	str_prefs_matID 
@@ -93,6 +93,387 @@ struct str_plan (
 		
 )
 
+
+
+struct str_facade_composant (
+	
+	------ Membres ------------------------------------------------------------------------------
+	private
+		---- Parametres -----------------------------------
+		m_id					=	"#",		
+		m_type				=	undefined,
+		m_nom				=	"",
+		m_params			=	undefined,
+		
+		---- Pointeurs -----------------------------------
+		m_plugThis		=	undefined,
+		m_construction	=	undefined,
+		m_geo				=	undefined,
+		m_matID 			= 	str_prefs_matID (),
+		
+		---- Rollout -----------------------------------
+		m_dialog 			= undefined,
+		
+		---- Fonction virtuelle pure pour construire le composant	----
+		fnVirt_construire	= (),
+		
+	------ Fonctions ------------------------------------------------------------------------------
+	public
+		---- Mutations -----------------------
+		fn set_dialog 		_dialog 				= ( m_dialog 				= _dialog ),
+		fn set_construire 	_fnConstruire 	= ( fnVirt_construire 	= _fnConstruire ),
+		fn set_params		_params			= ( m_params				= _params ),
+		
+		---- Accessions -----------------------
+		fn get_dialog			=	m_dialog,
+		fn get_params			=	m_params,
+		
+		--- Initialisations -----------------------
+		fn initialiser_dialog 	_roll_parent 	=(
+			dialog.m_rollPrt	= 	_roll_parent
+			dialog.m_param	=	m_params
+			dialog.actualiser()
+		),
+		fn initialiser 			_plugThis	_type	_nom 	=(
+			---- id unique ----
+			m_id += _type
+			for i= 1 to 10 do m_id += ( random 0 9 ) as string	
+			
+			m_type 				=	_type 			
+			m_nom				=	_nom
+			m_plugThis			=	_plugThis
+			m_construction 	= 	m_plugThis.construction
+			m_geo				=	m_plugThis.geo	
+		),
+		
+		---- Construction du mesh -----------------------
+		fn construire			= fnVirt_construire		()
+		
+) ---- fin composant -------------------------------
+
+struct str_constructeur_composants (
+	
+		m_this,
+		
+		---- Espacement -------------------------------------------
+		fn espacement =(
+			
+			--- les parametres du composant --------------
+			local params = struct param (
+				longueur = 0
+			)
+			local dialog  = rollout dialog "Espacement" width:180 height:70	(
+									local m_compo, m_rollPrt, m_param
+									fn actualiser =()
+								)
+			fn fnConstruire   pts_accroches		_normDir		=()
+			
+			--- Creation du composant --------------
+			local nvComposant = str_facade_composant 	()
+			nvComposant.initialiser			m_this			#FAC_COMP_ESP		"Espacement"
+			nvComposant.set_dialog		dialog
+			nvComposant.set_params	 	params
+			nvComposant.set_construire 	fnConstruire
+			
+			nvComposant
+		),
+		
+		---- Mur plein -------------------------------------------
+		fn murPlein 	=(
+			
+			local params = struct param (
+				longueur = 100
+			)
+			local dialog  = rollout dialog "Mur plein" width:180 height:70	(
+									local m_compo
+									local m_rollPrt
+									local m_param
+									
+									edittext 'edt_nom' "" pos:[7,3] width:166 height:16 align:#left
+									GroupBox 'grp1' "Générale" pos:[6,21] width:167 height:37 align:#left
+									label 'lbl19' "Longeur:" pos:[13,37] width:49 height:13 align:#left
+									spinner 'spn_longueur' "" pos:[96,36] width:70 height:16 range:[1,100000,0] type:#worldunits scale:1 align:#left
+									
+									fn actualiser =(
+										spn_longueur.value 	= 	m_compo.longueur
+										edt_nom.text 			=	m_compo.nom
+									)
+
+									on spn_longueur changed val do (
+										m_compo.longueur = val		
+										m_rollPrt.actualiser ()
+									)
+									on edt_nom	 entered txt 	do	(
+										m_compo.nom = txt
+										m_rollPrt.actualiser ()
+									)
+									
+								)
+			fn fnConstruire  pts_accroches		_normDir		 		= (
+									
+									--- Result -------------
+									local pt_result_1, pt_result_2, pt_result_3
+									
+									--- Vecteurs ------------
+									local vec_ep_dalle 	= [0,0,1] 		* 	m_this.ep_dalle		
+									local vec_ht 			= [0,0,1] 		* 	m_this.niveaux_hauteur				
+									local vec_longueur 	= _normDir 	* 	m_compo.longueur
+									
+									--- Points d'accroche ------------
+									local id_ptAccroche_1 	= pts_accroches[1]
+									local id_ptAccroche_2 	= pts_accroches[2]
+									local id_ptAccroche_3 	= pts_accroches[3]
+									
+									local ptAccroche_1		=	polyop.getVert 	m_this.delegate		id_ptAccroche_1	
+									local ptAccroche_2		=	polyop.getVert 	m_this.delegate		id_ptAccroche_2	
+									local ptAccroche_3		=	polyop.getVert 	m_this.delegate		id_ptAccroche_3	
+									
+									
+									
+									---- LA DALLE  -----------------------------------------------------------------------				
+									-------	Creation des points 	--------
+									local pt_2 		= ptAccroche_1		+ 	vec_longueur
+									local pt_3 		= pt_2					+	vec_ep_dalle
+									
+									--- creation des points --------------
+									local pts_pos 	= #( pt_2, pt_3 )
+									local pts_ids 	= m_geo.points 	pts_pos		
+									
+									-------	Creation des faces 	--------
+									local nvlFace = m_geo.face 		#(	 id_ptAccroche_1, 		pts_ids[1], 		pts_ids[2], 		id_ptAccroche_2	)		 	
+									polyop.setFaceMatID	 m_this.delegate		nvlFace	  ( matID.mur + 1 )
+									
+									--- Result -------------
+									pt_result_1 = pts_ids[1]
+									pt_result_2 = pts_ids[2]
+									
+									
+									
+									---- LE MUR -----------------------------------------------------------------------			
+									-------	Creation des points 	--------
+									local pt_3 		= pt_3		+	vec_ht
+									
+									--- creation des points --------------
+									local pts_pos 	= #( pt_3 )
+									local pts_ids 	= m_geo.points 	pts_pos		
+									
+									-------	Creation des faces 	--------
+									local nvlFace = m_geo.face 		#(	 		id_ptAccroche_2, 		pt_result_2, 		pts_ids[1], 		id_ptAccroche_3	)		 	
+									polyop.setFaceMatID	 m_this.delegate		nvlFace	  matID.mur
+									
+									--- Result -------------
+									pt_result_3 = pts_ids[1]
+									
+									
+									---- Result final -----------------------------------------------------------------------
+									#( pt_result_1, pt_result_2, pt_result_3 )
+									
+								)
+			
+			local nvComposant = str_facade_composant 	()
+			nvComposant.initialiser			m_this			#FAC_COMP_MUP		"Mur plein"
+			nvComposant.set_dialog		dialog
+			nvComposant.set_params	 	params
+			nvComposant.set_construire 	fnConstruire
+			
+			nvComposant
+			
+		),
+		
+		---- Balcon -------------------------------------------
+		fn balcon 		=(
+			
+			--- les parametres du composant --------------
+			local params = struct param (
+				longueur = 100,
+				largeur	= 100
+			)
+			local dialog  = rollout dialog "Balcon" width:180 height:70	(
+											local m_compo
+											local m_rollPrt
+											local m_param
+										
+											edittext 'edt_nom' "" pos:[7,3] width:166 height:16 align:#left
+											GroupBox 'grp1' "Générale" pos:[6,21] width:167 height:37 align:#left
+											label 'lbl_largeur' "Largeur:" pos:[13,37] width:49 height:13 align:#left
+											spinner 'spn_largeur' "" pos:[96,36] width:70 height:16 range:[1,100000,0] type:#worldunits scale:1 align:#left
+											
+											fn actualiser =(
+												spn_largeur.value 	= 	m_param.largeur
+												edt_nom.text 			=	m_compo.nom
+											)
+
+											on spn_largeur changed val do 
+												m_param.largeur = val		
+											
+											on edt_nom	 entered txt 	do	(
+												m_compo.nom = txt
+												m_rollPrt.actualiser ()
+											)
+											
+									)
+			fn fnConstruire  	pts_accroches		_normDir				 		= (
+				
+				--- Result -------------
+				local pt_result_1, pt_result_2, pt_result_3
+				
+				--- Vecteurs ------------
+				local vec_ep_dalle 	= [0,0,1] 			* 	m_this.ep_dalle			
+				local vec_longueur 	= _normDir 		* 	m_compo.longueur
+				local norm_balcon	= _normDir * rotateZ ( matrix3 1 ) -90
+				local vec_largeur		= norm_balcon 	*	 largeur				
+				
+				--- Points d'accroche ------------
+				local id_ptAccroche_1 	= pts_accroches[1]
+				local id_ptAccroche_2 	= pts_accroches[2]
+				local id_ptAccroche_3 	= pts_accroches[3]
+				
+				local ptAccroche_1		=	polyop.getVert 	m_this.delegate		id_ptAccroche_1	
+				local ptAccroche_2		=	polyop.getVert 	m_this.delegate		id_ptAccroche_2	
+				local ptAccroche_3		=	polyop.getVert 	m_this.delegate		id_ptAccroche_3	
+				
+				
+				-------	Placement des points 	--------
+				local pt_1 		= ptAccroche_1
+				local pt_2 		= pt_1		+  vec_longueur
+				local pt_3 		= pt_2		+ 	vec_ep_dalle				
+				local pt_4		= pt_1		+ 	vec_ep_dalle
+				
+				local pt_5		= pt_1		+	vec_largeur
+				local pt_6		= pt_2		+	vec_largeur		
+				local pt_7		= pt_3		+	vec_largeur
+				local pt_8		= pt_4		+	vec_largeur
+				
+				--- creation des points --------------
+				local pts_pos 	= #( 	pt_1, pt_2, pt_3, pt_4, pt_5, pt_6, pt_7, pt_8 )
+				local pts_ids 	= m_geo.points 	pts_pos		
+				
+				-------	Creation des faces 	--------
+				local nvlFace = m_geo.face 		#(	pts_ids[1], 		pts_ids[5], 		pts_ids[8], 		pts_ids[4] )		 			
+				polyop.setFaceMatID	 m_this.delegate		nvlFace	   ( matID.mur + 1 )			
+				local nvlFace = m_geo.face 		#(	pts_ids[5], 		pts_ids[6], 		pts_ids[7] , 	pts_ids[8] )		 				
+				polyop.setFaceMatID	 m_this.delegate		nvlFace	   ( matID.mur + 1 )					
+				local nvlFace = m_geo.face 		#(	pts_ids[6], 		pts_ids[2], 		pts_ids[3] , 	pts_ids[7] )		 		
+				polyop.setFaceMatID	 m_this.delegate		nvlFace	   ( matID.mur + 1 )			
+				local nvlFace = m_geo.face 		#(	pts_ids[1], 		pts_ids[2], 		pts_ids[6], 		pts_ids[5] )		 		
+				polyop.setFaceMatID	 m_this.delegate		nvlFace	   ( matID.mur + 1 )			
+				local nvlFace = m_geo.face 		#(	pts_ids[8], 		pts_ids[7], 		pts_ids[3], 		pts_ids[4] )		 				
+				polyop.setFaceMatID	 m_this.delegate		nvlFace	   ( matID.mur + 1 )
+				
+				
+				
+				
+				#()
+			)
+			
+			--- Creation du composant --------------
+			local nvComposant = str_facade_composant 	()
+			nvComposant.initialiser			m_this			#FAC_COMP_BAL		"Balcon"
+			nvComposant.set_dialog		dialog
+			nvComposant.set_params	 	params
+			nvComposant.set_construire 	fnConstruire
+			
+			nvComposant
+			
+		),
+		
+		---- Balcon fin -------------------------------------------
+		fn balconFin 	=(
+			
+			--- les parametres du composant --------------
+			local dialog  = rollout dialog "Balcon fin" (
+								)
+			fn fnConstruire   pts_accroches		_normDir		=()
+			
+			--- Creation du composant --------------
+			local nvComposant = str_facade_composant 	()
+			nvComposant.initialiser			m_this			#FAC_COMP_BAF		"Balcon fin"
+			nvComposant.set_dialog		dialog
+			nvComposant.set_construire 	fnConstruire
+			
+			nvComposant
+		)
+
+) -- fin creer composant ---------
+	
+
+ 
+
+------------------------------------------------------------------------------------------------------------------------------------
+
+struct str_facade (
+		
+		nom 							=	"Façade",
+		id								=	"#FACADE_",
+		probabilite					=	100,
+		
+		etages_use_min			=	false,
+		etages_nbre_min		= 	0,
+		etages_use_max		=	false,
+		etages_nbre_max		=	0,
+	
+		longueur_use_min		=	false,
+		longueur_nbre_min	= 	0,
+		longueur_use_max		=	false,
+		longueur_nbre_max	=	0,
+		
+		murs							=	1,			---- ( 1:les deux	2:gouttereaux	3:pignons )
+		mode						=	1,			---- ( 1:repeter	2:etrier			3:centrer )
+		
+		sequence					=	#(),
+		sequence_longueur	=0
+		
+		fn initialiser 		 	=(
+			---- id unique ----
+			for i= 1 to 10 do id += ( random 0 9 ) as string	
+		)
+) 
+
+
+
+/* 
+struct	str_ssTrace	(
+	
+	trace		=	#(),
+	etages	=	0,
+	toiture	=	#()
+	
+)
+
+
+
+
+struct str_mgr_composants (
+	
+	---- Membres ----------------------------------------------------------------------------------------------------------------
+	public
+		m_this,
+		
+	private
+		m_composants	=	#(),
+		
+	---- Fonctions ----------------------------------------------------------------------------------------------------------------
+	private
+		---- Parametres blocks ----
+		fn lire_parametres 		=(),
+		fn ecrire_parametres 	=(),
+		
+	---- Creations -------------------------------------------
+	public
+		---- Creation/Suppression ----
+		creer				=	str_constructeur_composants 	m_this:m_this,
+		fn supprimer 	=	(),
+		
+		---- Parametres Block ----
+		fn lire			=	lire_parametres(),
+		fn ecrire			=	ecrire_parametres()
+		
+)	--	fin manager de composants ------
+
+
+ */
+
+/* 
 -----------------------	MODELE	-------------------------------------------------------------------------------------------------------------
 struct str_facade_modele (
 		
@@ -109,69 +490,27 @@ struct str_facade_modele (
 		hauteur		=	0.,
 		
 		----- events ------------------------------------------
-		on create do (			
-			---- generation de l'id unique -------
+		on create do 
 			for i= 1 to 10 do id += ( random 0 9 ) as string	
-		)
+		
 
 )
 
-
-
-struct str_facadeParam_commun (
-		
-		m_compo,								---- le composant parant	
-		m_this,
-		
-		m_construction,
-		m_geo,
-		matID = str_prefs_matID ()
-		
-)
 
 -----------------------	FACADES PARAMETRIQUES	-------------------------------------------------------------------------------------------------------------
 struct	str_facadeParam_espacement (
-	private
-		----- membres communs --------------
-		m_compo,								---- le composant parant	
-		m_this,
-		
-		m_construction,
-		m_geo,
-		matID = str_prefs_matID (),
-		
+	
+	
 	public
-		id				= "#FAC_PES_",		
+		m_commun	=	str_facadeParam_commun 	m_parent:this		type:#FAC_PES
 		
-		dialog 		= 		rollout dialog "Espacement" width:180 height:70	(
-									local m_compo, m_rollPrt, m_param
-									fn actualiser =()
-								),
-						
+		dialog 		= 	rollout dialog "Espacement" width:180 height:70	(
+								local m_compo, m_rollPrt, m_param
+								fn actualiser =()
+							),
+		
 	---- membres  spécifiques	----------
-
-	------ fonctions -------
-		fn actualiser 			_compo		_construc	= (
-			m_construction 		= _construc
-			m_geo					=	m_construction.m_geo
-			m_this					=	m_construction.m_this
-			m_compo 				= _compo
-		),
 		
-		fn initialiser 			_compo		_construc	= (
-			
-			actualiser 			_compo		_construc	
-			
-			m_compo.nom 		= "Espacement"
-			m_compo.longueur 	= 0
-			m_compo.hauteur 	= 0
-		),
-		fn initialiser_dialog 	roll_prt 	=(
-			dialog.m_compo 	= m_compo
-			dialog.m_rollPrt	= roll_prt
-			dialog.m_param	=	this
-			dialog.actualiser()
-		),
 		
 		
 	------ CONSTRUIRE -------
@@ -181,7 +520,7 @@ struct	str_facadeParam_espacement (
 		----- events ------------------------------------------
 		on create do 	
 			for i= 1 to 10 do id += ( random 0 9 ) as string	
-
+		
 
 )
 
@@ -860,53 +1199,53 @@ struct	str_facadeParam_baie (
 				)
 				
 				
-				/* 
-				--- OUVRANT  ----------------------------------------------------------------------------------------------------------------	
-				if menuis_ouvrant_use do (
-					
-					-------	Placement des points 	--------
-					local pt_1		= pts_pourOuvrant[1]
-					local pt_2		= pts_pourOuvrant[2]
-					local pt_3		= pts_pourOuvrant[3]
-					local pt_4		= pts_pourOuvrant[4]
-					
-					local pt_5		= pt_1		+ 	vec_men_lrg 	+ 	vec_men_ht
-					local pt_6		= pt_2		- 	vec_men_lrg 	+ 	vec_men_ht
-					local pt_7		= pt_3		- 	vec_men_lrg 	- 	vec_men_ht
-					local pt_8		= pt_4		+ 	vec_men_lrg 	- 	vec_men_ht
-					
-					local pt_9		= pt_5		+ 	vec_men_ep
-					local pt_10		= pt_6		+ 	vec_men_ep
-					local pt_11		= pt_7		+ 	vec_men_ep
-					local pt_12		= pt_8		+ 	vec_men_ep
-					
-					local pts_pourOuvrant	= #( pt_9, pt_10, pt_11, pt_12  )
-					
-					--- creation des points --------------
-					local pts_pos 	= #( 	pt_1, pt_2, pt_3, pt_4, pt_5, pt_6, pt_7, pt_8 , pt_9, pt_10, pt_11, pt_12 )
-					local pts_ids 	= m_geo.points 	pts_pos		m_this
-					
-					---- cadre ------
-					
-					local nvlFace = m_geo.face 		#(	pts_ids[1]	, pts_ids[2], pts_ids[3], pts_ids[4], pts_ids[8], pts_ids[7], pts_ids[6], pts_ids[5], pts_ids[8], pts_ids[4] )		 m_this				
-					polyop.setFaceMatID	 m_this.delegate		nvlFace	  matID.menuiserie					
-					
-					local nvlFace = m_geo.face 		#(	pts_ids[5], 		pts_ids[6], 		pts_ids[10],   	pts_ids[9]  )			 m_this			
-					polyop.setFaceMatID	 m_this.delegate		nvlFace	  matID.menuiserie			
-					local nvlFace = m_geo.face 		#(	pts_ids[10], 	pts_ids[6], 		pts_ids[7],   	pts_ids[11]  )			 m_this			
-					polyop.setFaceMatID	 m_this.delegate		nvlFace	  matID.menuiserie			
-					local nvlFace = m_geo.face 		#(	pts_ids[12], 	pts_ids[11], 	pts_ids[7],   	pts_ids[8]  )			 m_this			
-					polyop.setFaceMatID	 m_this.delegate		nvlFace	  matID.menuiserie			
-					local nvlFace = m_geo.face 		#(	pts_ids[5], 		pts_ids[9], 		pts_ids[12],   	pts_ids[8]  )			 m_this			
-					polyop.setFaceMatID	 m_this.delegate		nvlFace	  matID.menuiserie			
+-- 				
+-- 				--- OUVRANT  ----------------------------------------------------------------------------------------------------------------	
+-- 				if menuis_ouvrant_use do (
 -- 					
--- 					----vitrage
-					local nvlFace = m_geo.face 		#(	pts_ids[9], 		pts_ids[10], 		pts_ids[11],   	pts_ids[12]  )			 m_this			
-					polyop.setFaceMatID	 m_this.delegate		nvlFace	  matID.vitrage			
-					
-				)
+-- 					-------	Placement des points 	--------
+-- 					local pt_1		= pts_pourOuvrant[1]
+-- 					local pt_2		= pts_pourOuvrant[2]
+-- 					local pt_3		= pts_pourOuvrant[3]
+-- 					local pt_4		= pts_pourOuvrant[4]
+-- 					
+-- 					local pt_5		= pt_1		+ 	vec_men_lrg 	+ 	vec_men_ht
+-- 					local pt_6		= pt_2		- 	vec_men_lrg 	+ 	vec_men_ht
+-- 					local pt_7		= pt_3		- 	vec_men_lrg 	- 	vec_men_ht
+-- 					local pt_8		= pt_4		+ 	vec_men_lrg 	- 	vec_men_ht
+-- 					
+-- 					local pt_9		= pt_5		+ 	vec_men_ep
+-- 					local pt_10		= pt_6		+ 	vec_men_ep
+-- 					local pt_11		= pt_7		+ 	vec_men_ep
+-- 					local pt_12		= pt_8		+ 	vec_men_ep
+-- 					
+-- 					local pts_pourOuvrant	= #( pt_9, pt_10, pt_11, pt_12  )
+-- 					
+-- 					--- creation des points --------------
+-- 					local pts_pos 	= #( 	pt_1, pt_2, pt_3, pt_4, pt_5, pt_6, pt_7, pt_8 , pt_9, pt_10, pt_11, pt_12 )
+-- 					local pts_ids 	= m_geo.points 	pts_pos		m_this
+-- 					
+-- 					---- cadre ------
+-- 					
+-- 					local nvlFace = m_geo.face 		#(	pts_ids[1]	, pts_ids[2], pts_ids[3], pts_ids[4], pts_ids[8], pts_ids[7], pts_ids[6], pts_ids[5], pts_ids[8], pts_ids[4] )		 m_this				
+-- 					polyop.setFaceMatID	 m_this.delegate		nvlFace	  matID.menuiserie					
+-- 					
+-- 					local nvlFace = m_geo.face 		#(	pts_ids[5], 		pts_ids[6], 		pts_ids[10],   	pts_ids[9]  )			 m_this			
+-- 					polyop.setFaceMatID	 m_this.delegate		nvlFace	  matID.menuiserie			
+-- 					local nvlFace = m_geo.face 		#(	pts_ids[10], 	pts_ids[6], 		pts_ids[7],   	pts_ids[11]  )			 m_this			
+-- 					polyop.setFaceMatID	 m_this.delegate		nvlFace	  matID.menuiserie			
+-- 					local nvlFace = m_geo.face 		#(	pts_ids[12], 	pts_ids[11], 	pts_ids[7],   	pts_ids[8]  )			 m_this			
+-- 					polyop.setFaceMatID	 m_this.delegate		nvlFace	  matID.menuiserie			
+-- 					local nvlFace = m_geo.face 		#(	pts_ids[5], 		pts_ids[9], 		pts_ids[12],   	pts_ids[8]  )			 m_this			
+-- 					polyop.setFaceMatID	 m_this.delegate		nvlFace	  matID.menuiserie			
+-- 	-- 					
+-- 	-- 					----vitrage
+-- 					local nvlFace = m_geo.face 		#(	pts_ids[9], 		pts_ids[10], 		pts_ids[11],   	pts_ids[12]  )			 m_this			
+-- 					polyop.setFaceMatID	 m_this.delegate		nvlFace	  matID.vitrage			
+-- 					
+-- 				)
 				
-				 */
+				
 				
 				
 				----------------------------
@@ -1303,43 +1642,6 @@ struct str_facade_composant (
 )
 
  
- 
-
-------------------------------------------------------------------------------------------------------------------------------------
-
-struct str_facade (
-		
-		nom 						=	"Façade",
-		
-		probabilite				=	100,
-		
-		etages_use_min		=	false,
-		etages_nbre_min		= 	0,
-		etages_use_max		=	false,
-		etages_nbre_max		=	0,
-	
-		longueur_use_min		=	false,
-		longueur_nbre_min	= 	0,
-		longueur_use_max	=	false,
-		longueur_nbre_max	=	0,
-		
-		murs						=	1,			---- (les deux ,gouttereaux, pignons )
-		mode						=	1,			---- (repeter, etrier, centrer)
-		
-		sequence				=	#(),
-		sequence_longueur	=0
-		
-) 
-
-struct	str_ssTrace	(
-	
-	trace		=	#(),
-	etages	=	0,
-	toiture	=	#()
-	
-)
-/* 
-
 struct	str_regle_ssTrace	(
 	private
 		trace_ptr,

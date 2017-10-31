@@ -6,61 +6,58 @@
 
 ---- manager des facades -----
 struct 	str_facades (
-	
+		
 	------------ DEBUG	-------------------------------------------------------------------------------------------------------------------------
-	m_debug = true,
-	m_dbgPrefix ="urba | str_facades",
-	fn debug 	_txt  var:	 param:    =(
-		try if m_debug do ::debuger 	_txt  	var:var	 param:param	prefix:m_dbgPrefix
-		catch ()
-	),
-	
-	
-	
-	
+		m_debug = true,
+		m_dbgPrefix ="urba | str_facades",
+		fn debug 	_txt  var:	 param:    =(
+			try if m_debug do ::debuger 	_txt  	var:var	 param:param	prefix:m_dbgPrefix
+			catch ()
+		),
+		
 	------------------------------------------------------------------------------------------------------------------------------------------------------
 	------------ MEMBRES	--------------------------------------------------------------------------------------------------------------------------
 	------------------------------------------------------------------------------------------------------------------------------------------------------
 	---- Pointeurs divers --------------------
 	public
-		m_construire,		---- struct de construction -----
-		m_this,			---- le plugin: 'this' -----
-		m_dialog,			---- la fenetre de m_dialog -----
+		m_construire,		---- struct de construction ----
+		m_this,				---- le plugin: 'this' ----
+		m_dialog,			---- la fenetre de m_dialog ----
 		
 	---- Parametres de la fenetre  --------------------
 	private
-		m_dialog_pos 					= [1235,223],
-		m_dialog_estOuvert 			= false,
+		m_dialog_pos 				= [1235,223],
+		m_dialog_estOuvert 		= false,
 		
 	---- Pour manipuler les parametres du batiment  --------------------
-		m_paramsNoms 	= #(	#nom, #etages_nbre_min, #etages_nbre_max, #longueur_min, #longueur_max, #murs, #repeter, #etirer, #sequence	),		
-		m_datasMgr 					= str_datasMgr 	m_prt:this,
-		m_presets 						= str_presets_batiment 	fichier_dossier:			( getDir #userScripts	 + "\\cp-Urba\\lib\\façades\\"		)	\
-																				fichier_categorie:			"Urba - Façades"	\
-																				fichier_extension:			"fcd"	\
-																				params_aEnregistrer:	m_paramsNoms,
+		m_paramsNoms 			= #(	#nom, #etages_nbre_min, #etages_nbre_max, #longueur_min, #longueur_max, #murs, #repeter, #etirer, #sequence	),		
+		m_datasMgr 				= str_datasMgr 	m_prt:this,
+		m_presets 					= str_presets_batiment 	fichier_dossier:			( getDir #userScripts	 + "\\cp-Urba\\lib\\façades\\"		)	\
+																			fichier_categorie:			"Urba - Façades"	\
+																			fichier_extension:			"fcd"	\
+																			params_aEnregistrer:	m_paramsNoms,
 		
 	---- Le scanner de mesh  --------------------
-		m_scannerMesh 							= str_enregistreurDeNode (),
+		m_scannerMesh 			= str_enregistreurDeNode (),
 		
 	---- Les parametres du batiment  --------------------
+		m_facades_total			= #(), 		---- les facades du batiment en struct-		--------------
+		m_composants_total		= #(), 		---- les composant du batiment en struct	---------------
+		m_modeles_total			= #(), 		---- les modeles du batiment en struct		---------------
+		m_parametriques_total	= #(), 		---- ---------------
+		
+		m_facade_courante 		= str_facade (),
+		m_id_courant 				= 0,
+		
+	---- Createur de composant -----------------
+		creerComposant 			= str_createur_de_composant 	m_this:m_this,
+		
+		
+	------------------------------------------------------------------------------------------------------------------------------------------------------
+	------------ FONCTIONS -------------------------------------------------------------------------------------------------------------------------
+	------------------------------------------------------------------------------------------------------------------------------------------------------
 	private
-		m_facades_total				= #(), 		---- les facades du batiment en struct---------------
-		m_composants_total			= #(), 		---- les composant du batiment en struct---------------
-		m_modeles_total				= #(), 		---- les modeles du batiment en struct---------------
-		m_parametriques_total		= #(), 		---- ---------------
-		
-		m_facade_courante 			= str_facade (),
-		m_id_courant 					= 0,
-		
-		
-		------------------------------------------------------------------------------------------------------------------------------------------------------
-		------------ FONCTIONS	----------------------------------------------------------------------------------------------------------------------
-		------------------------------------------------------------------------------------------------------------------------------------------------------
-		
-		----------------	 Accessions				 	--------------------------------------------------------------------------------------------------------
-	private
-		----	Composants 	----
+	----	Composants 	-----------------
 		fn get_composant_idUnique_param		_id 	 		=(
 			local strg_param 	= m_this.facades_composants[_id]
 			local idStrg 			= findstring 	strg_param		"#FAC_CMP_"
@@ -90,7 +87,7 @@ struct 	str_facades (
 			result
 			
 		),
-		----	Modeles	 ----
+	----	Modeles	 -----------------
 		fn get_modele_idUnique_param			_id 	 		=(
 			local strg_param 	= m_this.facades_modeles[_id]
 			local idStrg 			= findstring 	strg_param		"#FAC_MOD_"
@@ -118,7 +115,7 @@ struct 	str_facades (
 				if modele.id == _idUnique do result = modele
 			result
 		),
-		----	Composants 	parametriques 	----
+	----	Composants 	parametriques 	-----------------
 		fn get_parametrique_idUnique_param	_id 	 		=(
 			local strg_param 	= m_this.facades_parametriques[_id]
 			local idStrg 			= findstring 	strg_param		"#FAC_P"
@@ -150,7 +147,7 @@ struct 	str_facades (
 		
 		
 		
-		----------------	 PARAM  <---->  STRUCT 	--------------------------------------------------------------------------------------------------------
+	----------------	 PARAM  <---->  STRUCT 	--------------------------------------------------------------------------------------------------------
 	private
 		----- creation des structs -----
 		fn params_toStructs 									=(
@@ -262,7 +259,7 @@ struct 	str_facades (
 		),
 		
 		
-		----------------	 Constructeurs			 	--------------------------------------------------------------------------------------------------------
+		----------------	 Constructeurs  ...		 	--------------------------------------------------------------------------------------------------------
 	private
 		---- creer une instance temporaire d'un composant mur plein et la renvois -----
 		fn get_nouveauMurPlein					_longueur		 					=(
@@ -499,8 +496,8 @@ struct 	str_facades (
 		fn get_facades_count 	=	m_facades_total.count,
 		fn get_facades			=	m_facades_total,		
 		fn get_modeles  			=	m_modeles_total,
-		----	 get universelle 	----
-		fn get_parametre					_iUnique		 =(
+		---- Get universelle 	----
+		fn get_parametre			_iUnique		 =(
 			
 			---- un composant ------------
 			local elemTmp =  ( get_composant  _iUnique 		)	
@@ -520,7 +517,7 @@ struct 	str_facades (
 		fn creer_modele			_composant	_nodeSource	= get_nouveauModele			_composant	_nodeSource,
 		fn creer_composant		_pos	 _type	 param_type:	= get_nouveauComposant		_pos	 			_type	 			param_type:param_type,
 		fn creer_facade													= get_nouvelleFacade (),
-		
+		---- Duplications -----
 		fn dupliquer_facade 			_id	= get_copieFacade 			_id,
 		fn dupliquer_composant 	_id	= get_copieComposant 	_id,
 		
